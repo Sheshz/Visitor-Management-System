@@ -1,0 +1,182 @@
+/* GetePass Pro - Create Account Styles */
+
+:root {
+    --primary-color: #4a90e2;
+    --primary-dark: #3a7bc8;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --border-radius: 8px;
+    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .create-account-container {
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+  }
+  
+  .create-account-container h2 {
+    text-align: center;
+    color: var(--dark-color);
+    margin-bottom: 25px;
+    font-size: 28px;
+    font-weight: 600;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--dark-color);
+  }
+  
+  .form-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ced4da;
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    transition: border-color 0.3s;
+  }
+  
+  .form-group input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.25);
+  }
+  
+  .submit-button {
+    width: 100%;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+  }
+  
+  .submit-button:hover {
+    background-color: var(--primary-dark);
+  }
+  
+  .error-message {
+    color: var(--danger-color);
+    margin-top: 15px;
+    text-align: center;
+  }
+  
+  .success-message {
+    color: var(--success-color);
+    margin-top: 15px;
+    text-align: center;
+  }
+  
+  .loading-spinner {
+    display: block;
+    margin: 15px auto;
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(74, 144, 226, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    animation: spin 1s ease-in-out infinite;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .social-login-section {
+    margin-top: 25px;
+    text-align: center;
+  }
+  
+  .social-login-section h3 {
+    position: relative;
+    color: var(--secondary-color);
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .social-login-section h3:before,
+  .social-login-section h3:after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 30%;
+    height: 1px;
+    background-color: #e0e0e0;
+  }
+  
+  .social-login-section h3:before {
+    left: 0;
+  }
+  
+  .social-login-section h3:after {
+    right: 0;
+  }
+  
+  .social-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+  }
+  
+  .social-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  
+  .social-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .login-link {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    color: var(--primary-color);
+    text-decoration: none;
+  }
+  
+  .login-link:hover {
+    text-decoration: underline;
+  }
+  
+  @media (max-width: 576px) {
+    .create-account-container {
+      max-width: 100%;
+      margin: 20px 10px;
+      padding: 20px;
+    }
+    
+    .social-login-section h3:before,
+    .social-login-section h3:after {
+      width: 25%;
+    }
+  }
