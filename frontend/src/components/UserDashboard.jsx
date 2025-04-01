@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ChartLine,
   User,
@@ -11,44 +12,60 @@ import {
   Menu,
   ChevronLeft,
   Mail,
-  Phone,
-  Clock,
-  Calendar as CalendarIcon,
+  HelpCircle,
+  Settings,
+  ChevronDown,
 } from "lucide-react";
-import axios from "axios";
 import "../CSS/UserDashboard.css";
-import Profile from "./Profile"; // Import the Profile component
+import Profile from "./Profile";
+import Overview from "./UserOverview";
+import CreateHostProfile from "./hosts/CreateHostProfile";
+import Notifications from "./Notifications";
+import generateColorFromEmail from "../utils/generateColor";
+import useUserData from "../hooks/useUserData";
 
 const UserDashboard = () => {
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [activeMenu, setActiveMenu] = useState("Overview");
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [hasNewNotifications, setHasNewNotifications] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const profileDropdownRef = useRef(null);
 
-  // Fetch user data on component mount
+  // Check if token exists and redirect if not
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-  
-        if (!token) throw new Error('No authentication token found');
-  
-        const response = await axios.get('http://localhost:5000/api/users/me', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-  
-        setUserData(response.data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching user data:', error.response?.data || error.message);
-        setError('Failed to load user data');
-        setLoading(false);
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+  }, [navigate]);
+
+  // Fetch user data and notifications using the custom hook
+  const { userData, notifications, loading, error, refreshData } = useUserData();
+
+  // Generate profile color based on user email when available
+  const profileColor = userData?.email ? generateColorFromEmail(userData.email) : "#4A5568";
+
+  // Check for new notifications whenever notifications array changes
+  useEffect(() => {
+    if (notifications && notifications.length > 0) {
+      setHasNewNotifications(notifications.some(notif => !notif.read));
+    }
+  }, [notifications]);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setShowProfileDropdown(false);
       }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
     };
-  
-    fetchUserData();
-  }, []);
+  }, [profileDropdownRef]);
 
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
@@ -65,33 +82,48 @@ const UserDashboard = () => {
     { name: "Logout", icon: <LogOut size={20} /> },
   ];
 
-  // Sample visitor data
-  const visitorData = {
-    id: "MD2041A/291",
-    fullName: "Andre Tosin, ADERINDE",
-    email: "andretosin@gmail.com",
-    phone: "+234 812 888 5604",
-    date: "+234 812 888 5604",
-    time: "15:30 WAT",
+  // Function to get user initials for avatar if no profile image is available
+  const getUserInitials = () => {
+    if (!userData || !userData.firstName) {
+      return userData?.name?.charAt(0) || "U";
+    }
+    return `${userData.firstName.charAt(0)}${userData.lastName ? userData.lastName.charAt(0) : ''}`;
   };
 
-  // Function to get user initials for avatar
-  const getUserInitials = () => {
-    if (!userData || !userData.firstName || !userData.lastName) {
-      return "U"; // Default Initial
-    }
-    return `${userData.firstName.charAt(0)}${userData.lastName.charAt(0)}`;
+  // Handle notification icon click
+  const handleNotificationClick = () => {
+    setActiveMenu("Notifications");
+    setHasNewNotifications(false);
   };
 
   // Handle logout
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
-    window.location.href = '/login';
+    localStorage.removeItem("token");
+    localStorage.removeItem("userRole");
+    navigate("/login");
   };
 
-  if (loading) return <div className="loading">Loading...</div>;
-  if (error) return <div className="error-message">Error: {error}</div>;
+  // Retry fetching data if there's an error
+  const handleRetry = () => {
+    refreshData();
+  };
+
+  if (loading) return <div className="loading">Loading dashboard...</div>;
+  
+  if (error) {
+    return (
+      <div className="error-container">
+        <div className="error-message">Error: {error}</div>
+        <button onClick={handleRetry} className="retry-button">Retry</button>
+        <button onClick={handleLogout} className="logout-button">Go to Login</button>
+      </div>
+    );
+  }
+
+  // Get display name for user
+  const displayName = userData?.firstName && userData?.lastName 
+    ? `${userData.firstName} ${userData.lastName}`
+    : userData?.name || "User";
 
   return (
     <div className="dashboard-container">
@@ -108,7 +140,6 @@ const UserDashboard = () => {
             </button>
           )}
         </div>
-
         {collapsed && (
           <div className="expand-btn-container">
             <button onClick={toggleSidebar} className="expand-btn">
@@ -116,24 +147,20 @@ const UserDashboard = () => {
             </button>
           </div>
         )}
-
         <div className="menu-container">
           {menuItems.map((item) => (
             <div
               key={item.name}
               onClick={() => {
-                setActiveMenu(item.name);
                 if (item.name === "Logout") {
                   handleLogout();
+                } else {
+                  setActiveMenu(item.name);
                 }
               }}
-              className={`menu-item ${
-                activeMenu === item.name ? "active" : ""
-              }`}
+              className={`menu-item ${activeMenu === item.name ? "active" : ""}`}
             >
-              <div className={collapsed ? "icon-centered" : "icon"}>
-                {item.icon}
-              </div>
+              <div className={collapsed ? "icon-centered" : "icon"}>{item.icon}</div>
               {!collapsed && <span className="menu-text">{item.name}</span>}
             </div>
           ))}
@@ -146,77 +173,70 @@ const UserDashboard = () => {
         <div className="header">
           <h1 className="header-title">User VMS Dashboard</h1>
           <div className="user-section">
-            <Mail size={20} className="mail-icon" />
-            <div className="notification-dot"></div>
+            <div className="notification-icon" onClick={handleNotificationClick}>
+              <Mail size={18} className="mail-icon" />
+              {hasNewNotifications && <div className="notification-dot"></div>}
+            </div>
+
             {userData ? (
-              <div className="user-profile">
-                <div className="avatar">{getUserInitials()}</div>
+              <div
+                className="user-profile"
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                ref={profileDropdownRef}
+              >
+                <div className="avatar" style={{ backgroundColor: profileColor }}>
+                  {userData.profileImage ? (
+                    <img src={userData.profileImage} alt="Profile" />
+                  ) : (
+                    getUserInitials()
+                  )}
+                </div>
                 <div className="user-info">
-                  <div className="user-name">
-                    {userData.firstName} {userData.lastName}
-                  </div>
+                  <div className="user-name">{displayName}</div>
                   <div className="user-role">
-                    {userData.role === "user"
-                      ? "Standard account"
-                      : userData.role}
+                    {userData.role === "user" ? "Standard account" : userData.role || "User"}
                   </div>
                 </div>
+                <ChevronDown size={14} color="#718096" />
+                {showProfileDropdown && (
+                  <div className="profile-dropdown show">
+                    <div className="dropdown-item" onClick={() => setActiveMenu("Profile")}>
+                      <User size={16} />
+                      <span>Profile</span>
+                    </div>
+                    <div
+                      className="dropdown-item"
+                      onClick={() => {
+                        setActiveMenu("Profile");
+                        localStorage.setItem("profileActiveTab", "settings");
+                      }}
+                    >
+                      <Settings size={16} />
+                      <span>Settings</span>
+                    </div>
+                    <div className="dropdown-item">
+                      <HelpCircle size={16} />
+                      <span>Support</span>
+                    </div>
+                    <div className="dropdown-item logout" onClick={handleLogout}>
+                      <LogOut size={16} />
+                      <span>Logout</span>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
-              <div>Loading user...</div>
+              <div>No user data available</div>
             )}
           </div>
         </div>
-
         {/* Dashboard Content */}
         <div className="content-wrapper">
-          {activeMenu === "Overview" && (
-            <div className="visitor-card">
-              <div className="visitor-header">
-                <h2 className="visitor-title">
-                  Visitor's Profile:{" "}
-                  <span className="visitor-id">{visitorData.id}</span>
-                </h2>
-                <div className="visitor-id-top">{visitorData.id}</div>
-              </div>
-
-              <div className="visitor-details">
-                <div className="detail-row">
-                  <User size={20} className="detail-icon" />
-                  <div className="detail-label">Full Name</div>
-                  <div className="detail-value">{visitorData.fullName}</div>
-                </div>
-
-                <div className="detail-row">
-                  <Mail size={20} className="detail-icon" />
-                  <div className="detail-label">Email Address</div>
-                  <div className="detail-value">{visitorData.email}</div>
-                </div>
-
-                <div className="detail-row">
-                  <Phone size={20} className="detail-icon" />
-                  <div className="detail-label">Phone Number</div>
-                  <div className="detail-value">{visitorData.phone}</div>
-                </div>
-
-                <div className="detail-row">
-                  <CalendarIcon size={20} className="detail-icon" />
-                  <div className="detail-label">Date</div>
-                  <div className="detail-value">{visitorData.date}</div>
-                </div>
-
-                <div className="detail-row last">
-                  <Clock size={20} className="detail-icon" />
-                  <div className="detail-label">Time</div>
-                  <div className="detail-value">{visitorData.time}</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeMenu === "Profile" && (
-            <Profile />
-          )}
+          {activeMenu === "Overview" && <Overview />}
+          {activeMenu === "Profile" && <Profile />}
+          {activeMenu === "Become a Host" && <CreateHostProfile />}
+          {activeMenu === "Notifications" && <Notifications notifications={notifications} />}
+          {/* Add other menu components as needed */}
         </div>
       </div>
     </div>

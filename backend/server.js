@@ -4,9 +4,16 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+
+// Import routes
 const userRoutes = require("./routes/userRoutes");
+const visitorRoutes = require("./routes/visitorRoutes");
+const appointmentRoutes = require("./routes/appointmentRoutes");
 //const meetingRoutes = require("./routes/meetingRoutes");
-//const hostRoutes = require("./routes/hostRoutes"); // Host Routes
+const hostRoutes = require("./routes/hostRoutes"); // Host Routes
+const statisticsRoutes = require("./routes/statisticsRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+
 const http = require("http");
 //const socketIo = require("socket.io");
 
@@ -36,12 +43,17 @@ app.use("/uploads", express.static("uploads")); // Serve static files for image 
 
 // Routes
 app.use("/api/users", userRoutes);
+app.use("/api/visitors", visitorRoutes);
+app.use("/api/appointments", appointmentRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/statistics", statisticsRoutes);
+app.use("/api/hosts", hostRoutes); 
+
 
 app.get("/api/public", (req, res) => {
   res.send("This is a public route!");
 });
 //app.use("/api/meetings", verifyToken, meetingRoutes); // Protect meetings with token verification
-//app.use("/api/hosts", hostRoutes); // Host routes
 
 // Connect to MongoDB
 mongoose

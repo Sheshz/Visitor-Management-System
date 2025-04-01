@@ -1,4 +1,6 @@
-const mongoose = require("mongoose");
+// backend/models/User.js
+const mongoose = require('mongoose');
+const generateColorFromEmail = require('../utils/generateColor'); // Corrected import
 
 const userSchema = new mongoose.Schema({
   firstName: {
@@ -22,6 +24,17 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: "user",
   },
+  profileColor: {
+    type: String,
+  }
+});
+
+// Pre-save middleware to generate profile color if not set
+userSchema.pre('save', function(next) {
+  if (!this.profileColor) {
+    this.profileColor = generateColorFromEmail(this.email);
+  }
+  next();
 });
 
 module.exports = mongoose.model("User", userSchema);

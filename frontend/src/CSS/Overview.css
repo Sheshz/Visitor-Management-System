@@ -1,0 +1,507 @@
+.overview-container {
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  
+  /* Visitor Card (Matching UserDashboard.css style) */
+  .visitor-card {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  
+  .visitor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .visitor-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+  }
+  
+  .visitor-id {
+    color: #007bff;
+    font-weight: 500;
+  }
+  
+  .visitor-id-top {
+    font-size: 14px;
+    color: #007bff;
+    font-weight: 500;
+  }
+  
+  .visitor-details {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .detail-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .detail-row.last {
+    border-bottom: none;
+  }
+  
+  .detail-icon {
+    color: #007bff;
+    margin-right: 15px;
+  }
+  
+  .detail-label {
+    width: 150px;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .detail-value {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+  }
+  
+  /* Summary Cards */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  
+  .summary-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .summary-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  }
+  
+  .card-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+  }
+  
+  .card-icon svg {
+    width: 24px;
+    height: 24px;
+    color: white;
+  }
+  
+  .card-icon.visitors {
+    background-color: #4361ee;
+  }
+  
+  .card-icon.appointments {
+    background-color: #3a86ff;
+  }
+  
+  .card-icon.pending {
+    background-color: #ff9f1c;
+  }
+  
+  .card-icon.notifications {
+    background-color: #e63946;
+  }
+  
+  .card-details h3 {
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    margin: 0 0 5px 0;
+  }
+  
+  .card-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+  }
+  
+  .card-period {
+    font-size: 13px;
+    color: #888;
+    margin: 0;
+  }
+  
+  /* Charts */
+  .charts-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  
+  .chart-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  }
+  
+  .chart-card h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+    color: #333;
+  }
+  
+  .chart-wrapper {
+    height: 300px;
+    position: relative;
+  }
+  
+  .pie-chart {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  /* Hosts and Notifications Section */
+  .hosts-notifications-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  
+  .section-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  }
+  
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .section-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    color: #333;
+  }
+  
+  .view-all-btn {
+    background: none;
+    border: none;
+    color: #3a86ff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  
+  .view-all-btn:hover {
+    text-decoration: underline;
+  }
+  
+  /* Hosts List */
+  .hosts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .host-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+  }
+  
+  .host-item:hover {
+    background-color: #f5f7fa;
+  }
+  
+  .host-avatar {
+    position: relative;
+    margin-right: 12px;
+  }
+  
+  .host-avatar img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  
+  .avatar-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 16px;
+  }
+  
+  .status-indicator {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid white;
+  }
+  
+  .status-indicator.available {
+    background-color: #2ecc71;
+  }
+  
+  .status-indicator.busy {
+    background-color: #e74c3c;
+  }
+  
+  .status-indicator.away {
+    background-color: #f39c12;
+  }
+  
+  .host-details h3 {
+    font-size: 15px;
+    font-weight: 500;
+    margin: 0 0 2px 0;
+    color: #333;
+  }
+  
+  .host-details p {
+    font-size: 13px;
+    color: #666;
+    margin: 0;
+  }
+  
+  /* Notifications */
+  .notifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  
+  .notification-item {
+    display: flex;
+    padding: 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+  }
+  
+  .notification-item:hover {
+    background-color: #f5f7fa;
+  }
+  
+  .notification-item.unread {
+    background-color: #edf2ff;
+  }
+  
+  .notification-icon {
+    margin-right: 12px;
+  }
+  
+  .icon-wrapper {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .icon-wrapper svg {
+    width: 18px;
+    height: 18px;
+    color: white;
+  }
+  
+  .icon-wrapper.visitor {
+    background-color: #4361ee;
+  }
+  
+  .icon-wrapper.appointment {
+    background-color: #3a86ff;
+  }
+  
+  .icon-wrapper.alert {
+    background-color: #e63946;
+  }
+  
+  .notification-content p {
+    margin: 0;
+  }
+  
+  .notification-message {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 4px;
+  }
+  
+  .notification-time {
+    font-size: 12px;
+    color: #888;
+  }
+  
+  /* Visitors History Table */
+  .history-card {
+    margin-bottom: 24px;
+  }
+  
+  .visitors-table-container {
+    overflow-x: auto;
+  }
+  
+  .visitors-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  
+  .visitors-table th {
+    background-color: #f8f9fa;
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  .visitors-table th:first-child {
+    border-top-left-radius: 8px;
+  }
+  
+  .visitors-table th:last-child {
+    border-top-right-radius: 8px;
+  }
+  
+  .visitors-table td {
+    padding: 12px 16px;
+    border-top: 1px solid #e9ecef;
+    font-size: 14px;
+    color: #495057;
+  }
+  
+  .visitors-table tr:hover td {
+    background-color: #f8f9fa;
+  }
+  
+  .visitor-info {
+    display: flex;
+    align-items: center;
+  }
+  
+  .visitor-avatar {
+    margin-right: 12px;
+  }
+  
+  .visitor-name {
+    font-weight: 500;
+    margin: 0 0 2px 0;
+  }
+  
+  .visitor-email {
+    font-size: 12px;
+    color: #6c757d;
+    margin: 0;
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  
+  .status-badge.checked-in {
+    background-color: #e3f2fd;
+    color: #0d47a1;
+  }
+  
+  .status-badge.checked-out {
+    background-color: #e8f5e9;
+    color: #1b5e20;
+  }
+  
+  .status-badge.pending {
+    background-color: #fff3e0;
+    color: #e65100;
+  }
+  
+  .status-badge.cancelled {
+    background-color: #ffebee;
+    color: #b71c1c;
+  }
+  
+  .no-data {
+    text-align: center;
+    color: #6c757d;
+    padding: 16px 0;
+    font-style: italic;
+  }
+  
+  .loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    font-size: 18px;
+    color: #666;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 1200px) {
+    .charts-container,
+    .hosts-notifications-container {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .summary-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .summary-cards {
+      grid-template-columns: 1fr;
+    }
+    
+    .overview-container {
+      padding: 16px;
+    }
+  }
