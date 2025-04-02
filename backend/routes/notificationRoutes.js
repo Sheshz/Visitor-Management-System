@@ -3,22 +3,13 @@ const router = express.Router();
 const notificationController = require('../controllers/notificationController');
 const { verifyToken } = require('../middleware/userMiddleware');
 
-// All routes are protected with authentication
-router.use(verifyToken);
+// Public routes (no authentication required)
+router.get('/recent', notificationController.getRecentNotifications);
 
-// Get all notifications for a user
-router.get('/', notificationController.getRecentNotifications);
-
-// Mark notification as read
-router.put('/:id/read', notificationController.markAsRead);
-
-// Delete a notification
-router.delete('/:id', notificationController.deleteNotification);
-
-// Get unread notification count
-router.get('/unread/count', notificationController.getUnreadCount);
-
-// Mark all notifications as read
-router.put('/read/all', notificationController.markAllAsRead);
+// Protected routes (require authentication)
+router.get('/user', verifyToken, notificationController.getUserNotifications);
+router.get('/unread', verifyToken, notificationController.getUnreadCount);
+router.put('/:id', verifyToken, notificationController.markNotificationAsRead);
+router.delete('/:id', verifyToken, notificationController.deleteNotification);
 
 module.exports = router;

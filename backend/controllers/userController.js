@@ -1,7 +1,6 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
-const sendEmail = require("../utils/sendEmails");
-
+const { sendEmail } = require("../utils/emailService");
 
 // Register User and Send Email
 const registerUser = async (req, res) => {
@@ -17,10 +16,9 @@ const registerUser = async (req, res) => {
 
     // Save the user with plain password (no hashing)
     const user = new User({ firstName, lastName, email, password });
-
     await user.save();
 
-    // Send the welcome email after user registration
+    // Generate custom styled welcome email
     const subject = "Welcome to GetPass Pro!";
     const html = `
 <!DOCTYPE html>
@@ -130,7 +128,7 @@ The GetPass Pro Team
 © 2025 GetPass Pro. All rights reserved.
 `;
 
-    // Send email to the newly registered user
+    // Send email using the new email service (but with original styling)
     await sendEmail(email, subject, text, html);
 
     // Send success response
@@ -259,10 +257,9 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
-// Get user profile by email (assuming user is authenticated and email is stored in req.user)
-const getprofile= async (req, res) => {
+// Get user profile by email
+const getprofile = async (req, res) => {
   try {
-    // Simulating authentication: Change this based on your auth setup
     const email = req.query.email; // Get email from query params
 
     if (!email) {
@@ -280,6 +277,122 @@ const getprofile= async (req, res) => {
   }
 };
 
+// Send password reset email
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Generate reset token
+    const resetToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    // Create reset link
+    const resetLink = `${
+      process.env.BASE_URL || "http://localhost:3000"
+    }/reset-password/${resetToken}`;
+
+    // Create email content with matching GetPass Pro styling
+    const subject = "Password Reset Request";
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Reset - GetPass Pro</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .header { background-color: #5e42d5; padding: 15px; text-align: center; }
+    .logo-box { display: inline-block; background-color: #5e42d5; border-radius: 8px; width: 40px; height: 40px; margin-right: 10px; vertical-align: middle; border: 2px solid rgba(255,255,255,0.4); }
+    .logo-text { display: inline-block; font-size: 24px; font-weight: bold; color: white; vertical-align: middle; }
+    .gp-text { color: white; font-weight: bold; font-size: 20px; line-height: 40px; }
+    .content { padding: 30px; }
+    .alert-box { background-color: #f5f3ff; border-left: 4px solid #5e42d5; padding: 15px; margin-bottom: 20px; border-radius: 0 4px 4px 0; }
+    .button { display: inline-block; background-color:rgb(117, 101, 190); color: white; text-decoration: none; padding: 12px 25px; border-radius: 5px; margin: 20px 0; font-weight: bold; text-align: center; }
+    .button:hover { background-color:rgb(103, 83, 189); }
+    .divider { height: 1px; background-color: #eee; margin: 25px 0; }
+    .footer { font-size: 12px; color: #777; text-align: center; padding: 20px; background-color: #f5f3ff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo-box">
+        <div class="gp-text">GP</div>
+      </div>
+      <span class="logo-text">GetPass Pro</span>
+    </div>
+    
+    <div class="content">
+      <h2>Password Reset Request</h2>
+      
+      <div class="alert-box">
+        <p>We received a request to reset your password. This link will expire in 1 hour.</p>
+      </div>
+      
+      <p>Dear ${user.firstName} ${user.lastName},</p>
+      
+      <p>We've received a request to reset your password for your GetPass Pro account. To proceed with the password reset, please click the button below:</p>
+      
+      <center><a href="${resetLink}" class="button">Reset My Password</a></center>
+      
+      <p>If the button above doesn't work, you can copy and paste the following link into your browser:</p>
+      <p style="word-break: break-all; background-color: #f5f5f5; padding: 10px; border-radius: 5px; font-size: 14px;">${resetLink}</p>
+      
+      <div class="divider"></div>
+      
+      <p><strong>Important:</strong> If you didn't request this password reset, please ignore this email or contact support if you have concerns about your account security.</p>
+      
+      <p>Stay secure,<br><strong>The GetPass Pro Team</strong></p>
+    </div>
+    
+    <div class="footer">
+      <p>© 2025 GetPass Pro. All rights reserved.</p>
+      <p><a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a> | <a href="#">Contact Support</a></p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+    const textContent = `
+Password Reset Request - GetPass Pro
+
+Dear ${user.firstName} ${user.lastName},
+
+We've received a request to reset your password for your GetPass Pro account. 
+To proceed with the password reset, please use the following link:
+
+${resetLink}
+
+This link will expire in 1 hour.
+
+Important: If you didn't request this password reset, please ignore this email or contact support if you have concerns about your account security.
+
+Stay secure,
+The GetPass Pro Team
+
+© 2025 GetPass Pro. All rights reserved.
+`;
+
+    // Send password reset email
+    await sendEmail(email, subject, textContent, htmlContent);
+
+    res.status(200).json({ message: "Password reset email sent" });
+  } catch (error) {
+    console.error("Error sending reset email:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 module.exports = {
   getprofile,
   registerUser,
@@ -288,4 +401,5 @@ module.exports = {
   updateProfile,
   updatePassword,
   deleteAccount,
+  forgotPassword,
 };

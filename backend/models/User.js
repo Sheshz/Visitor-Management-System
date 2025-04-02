@@ -15,19 +15,33 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
+    lowercase: true,
+    trim: true,
   },
   password: {
     type: String,
-    required: true,
+      required: true,
+      minlength: 6,
   },
   role: {
     type: String,
+    enum: ['admin', 'receptionist', 'host', 'user'],
     default: "user",
   },
   profileColor: {
     type: String,
+  },
+  resetPasswordToken: String,
+    resetPasswordExpires: Date,
+    verificationToken: String,
+    // Additional fields as needed
+  },
+  { 
+    timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true }
   }
-});
+);
 
 // Pre-save middleware to generate profile color if not set
 userSchema.pre('save', function(next) {

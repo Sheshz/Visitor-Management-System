@@ -1,30 +1,26 @@
 const connectDB = require("./config/db");
 const express = require("express");
-const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const http = require("http");
+const path = require("path");
 
 // Import routes
 const userRoutes = require("./routes/userRoutes");
 const visitorRoutes = require("./routes/visitorRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
 //const meetingRoutes = require("./routes/meetingRoutes");
-const hostRoutes = require("./routes/hostRoutes"); // Host Routes
+const hostRoutes = require("./routes/hostRoutes");
 const statisticsRoutes = require("./routes/statisticsRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
-
-const http = require("http");
-//const socketIo = require("socket.io");
+//const authRoutes = require("./routes/authRoutes"); // New auth routes import
 
 // Load environment variables
 dotenv.config();
-connectDB();
 
-require('dotenv').config(); // Make sure to require dotenv at the top of your app
-
-const jwtSecret = process.env.JWT_SECRET;
-console.log(jwtSecret); // Prints the JWT_SECRET
+// Define PORT at the beginning
+const PORT = process.env.PORT || 5000;
 
 // Initialize Express app
 const app = express();
@@ -39,33 +35,50 @@ const server = http.createServer(app);
 app.use(cors()); // Enable CORS
 app.use(express.json()); // Parse JSON requests
 app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded requests
-app.use("/uploads", express.static("uploads")); // Serve static files for image uploads
+app.use(express.urlencoded({ extended: true }));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
+//app.use("/api/au", authRoutes); // Add new auth routes
 app.use("/api/users", userRoutes);
 app.use("/api/visitors", visitorRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/statistics", statisticsRoutes);
-app.use("/api/hosts", hostRoutes); 
-
+app.use("/api/hosts", hostRoutes);
 
 app.get("/api/public", (req, res) => {
   res.send("This is a public route!");
 });
 //app.use("/api/meetings", verifyToken, meetingRoutes); // Protect meetings with token verification
 
-// Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("Database connected"))
-  .catch((err) => console.log("Database connection error:", err));
+// Health check route
+app.get("/health", (req, res) => {
+  res.status(200).send("Server is running");
+});
+
+// Default route
+app.get("/", (req, res) => {
+  res.send("API is running");
+});
+
+// Connect to database - only once
+connectDB();
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error("Server Error:", err);
+  res.status(500).json({ message: "Server error", error: err.message });
+});
 
 // Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled Rejection:", err);
+});
+
+module.exports = app;

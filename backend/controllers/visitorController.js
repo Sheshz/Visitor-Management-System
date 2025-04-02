@@ -3,7 +3,6 @@ const Visitor = require("../models/Visitor");
 const Notification = require("../models/Notification");
 const Host = require("../models/Host");
 
-// Add these missing functions that are referenced in your routes
 exports.createVisitor = async (req, res) => {
   try {
     const { fullName, email, purpose, host, appointmentDate, appointmentTime, type } = req.body;
@@ -56,17 +55,60 @@ exports.getVisitorById = async (req, res) => {
   try {
     const visitorId = req.params.id;
     
-    const visitor = await Visitor.findById(visitorId)
-      .populate("host", "name department");
+    let visitor;
+    
+    // Handle special cases with early return to avoid attempting ObjectId conversion
+    if (visitorId === 'current') {
+      // Get the most recent active visitor
+      visitor = await Visitor.findOne({ status: 'active' })
+        .sort({ createdAt: -1 })
+        .populate("host", "name department");
+        
+      if (!visitor) {
+        return res.status(404).json({ success: false, message: 'No current visitor found' });
+      }
       
-    if (!visitor) {
-      return res.status(404).json({ error: "Visitor not found" });
+      return res.status(200).json({
+        success: true,
+        data: visitor
+      });
+    } 
+    
+    if (visitorId === 'recent') {
+      // Get the most recent visitor regardless of status
+      visitor = await Visitor.findOne()
+        .sort({ createdAt: -1 })
+        .populate("host", "name department");
+        
+      if (!visitor) {
+        return res.status(404).json({ success: false, message: 'No recent visitor found' });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        data: visitor
+      });
     }
     
-    return res.status(200).json(visitor);
+    // Normal case: Find by ObjectId
+    visitor = await Visitor.findById(visitorId).populate("host", "name department");
+    
+    if (!visitor) {
+      return res.status(404).json({ success: false, message: 'Visitor not found' });
+    }
+    
+    // Return the visitor
+    return res.status(200).json({
+      success: true,
+      data: visitor
+    });
   } catch (error) {
-    console.error("Error fetching visitor:", error);
-    return res.status(500).json({ error: "Server error while fetching visitor" });
+    console.error('Error fetching visitor:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
   }
 };
 
@@ -112,7 +154,6 @@ exports.deleteVisitor = async (req, res) => {
   }
 };
 
-// Keep the existing functions
 exports.getRecentVisitors = async (req, res) => {
   try {
     // Get recent visitors (last 5)
@@ -132,16 +173,13 @@ exports.getRecentVisitors = async (req, res) => {
 
 exports.getCurrentVisitor = async (req, res) => {
   try {
-    // You can fetch the current visitor based on the authenticated user
-    const visitorId = req.user._id;
-
-    const visitor = await Visitor.findById(visitorId).populate(
-      "host",
-      "name department"
-    );
+    // Get the most recent active visitor without requiring authentication
+    const visitor = await Visitor.findOne({ status: 'active' })
+      .sort({ checkInTime: -1 })
+      .populate("host", "name department");
 
     if (!visitor) {
-      return res.status(404).json({ error: "Visitor not found" });
+      return res.status(404).json({ success: false, message: 'No current visitor found' });
     }
 
     // Format visitor data for frontend
@@ -160,16 +198,18 @@ exports.getCurrentVisitor = async (req, res) => {
       status: visitor.status,
     };
 
-    return res.status(200).json(visitorData);
+    return res.status(200).json({
+      success: true,
+      data: visitorData
+    });
   } catch (error) {
     console.error("Error getting current visitor:", error);
     return res
       .status(500)
-      .json({ error: "Server error while retrieving visitor" });
+      .json({ success: false, message: "Server error while retrieving visitor" });
   }
 };
 
-// Add this public function referenced in your routes
 exports.getPublicVisitorData = async (req, res) => {
   try {
     // This would return data that doesn't require authentication

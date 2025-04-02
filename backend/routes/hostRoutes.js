@@ -1,107 +1,57 @@
 // routes/hostRoutes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const hostController = require('../controllers/hostController');
-const { verifyToken } = require('../middleware/userMiddleware');
-const fileUpload = require('../middleware/fileUpload');
-
-// Get all hosts
-router.get('/all', verifyToken, hostController.getAllHosts);
-
-// Get host by ID
-router.get('/:id', verifyToken, hostController.getHostById);
-
-// Get host profile (for current authenticated user)
-router.get('/profile/me', verifyToken, hostController.getMyHostProfile);
-
-// Apply to become a host (with file upload)
-router.post('/apply', verifyToken, fileUpload.uploadSingleFile('avatar'), hostController.applyToBecomeHost);
-
-// Update host
-router.put('/:id', verifyToken, fileUpload.uploadSingleFile('avatar'), hostController.updateHost);
-
-// Delete host
-router.delete('/:id', verifyToken, hostController.deleteHost);
-
-// Get hosts for dashboard (admin only)
-router.get('/dashboard/stats', verifyToken, hostController.getHostsStats);
-
-// Additional routes as needed
-router.get('/department/:deptId', verifyToken, hostController.getHostsByDepartment);
-
-module.exports = router;
-
-
-
-/*
-// routes/hostsRoutes.js
-const express = require('express');
-const router = express.Router();
-const hostsController = require('../controllers/hostController');
-const authMiddleware = require('../middleware/userMiddleware');
-
-// All routes are protected with authentication
-router.use(authMiddleware);
-
-// Get available hosts
-router.get('/available', hostsController.getAvailableHosts);
-
-// Route for applying to become a host
-router.post("/apply", verifyToken, upload.single("avatar"), applyToBecomeHost);
-module.exports = router;
-
-// Host login route
-router.post("/loginHost", loginHost);
-
-/*const express = require("express");
-const router = express.Router();
+const hostController = require("../controllers/hostController");
+const { verifyToken } = require("../middleware/userMiddleware");
 const multer = require("multer");
 const path = require("path");
-//const { applyToBecomeHost, loginHost, updateHost, deleteHost, getHostDetails , createHost ,  getAvailableHosts } = require("../controllers/hostController");
-const { createHost,getAvailableHosts } = require("../controllers/hostController");
 
-const { verifyToken } = require("../middleware/userMiddleware");
-
-// Set up Multer for image uploading
+// Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, "../uploads");
-    cb(null, uploadPath);
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
   },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + path.extname(file.originalname);
-    cb(null, uniqueSuffix);
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now();
+    cb(null, "avatar-" + uniqueSuffix + path.extname(file.originalname));
   },
 });
 
-const upload = multer({ storage: storage });
+// File filter to only allow images
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only image files are allowed!"), false);
+  }
+};
 
-// Route for applying to become a host
-router.post("/apply", verifyToken, upload.single("avatar"), applyToBecomeHost);
-
-// Host login route
-router.post("/loginHost", loginHost);
-
-// Add verifyToken middleware to protect this route
-router.get("/getHostDetails", verifyToken, getHostDetails);
-
-// Protected route with token verification (example)
-router.get("/protected-route", verifyToken, (req, res) => {
-  res.status(200).json({ message: "Protected route accessed successfully!" });
+// Configure upload settings
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: fileFilter,
 });
 
-// Update host (with avatar upload)
-router.put("/:id", verifyToken, upload.single("avatar"), updateHost);
+// Routes
 
-// Delete host
-router.delete("/:id", verifyToken, deleteHost);
+// GET current user's host profile
+router.get("/me", verifyToken, hostController.getHostProfile);
 
-// Define POST route to create a host
-router.post("/create", createHost);
+// GET all available hosts
+router.get("/available", hostController.getAvailableHosts);
 
-// Route to get available hosts
-router.get("/available", getAvailableHosts);
+// POST create new host profile - add this route to match the frontend
+router.post("/apply", verifyToken, upload.single("avatar"), hostController.createHost);
 
-// Define POST route to create a host
-router.post("/create", createHost);
-module.exports = router; */
+// PUT update host profile
+router.put(
+  "/update",
+  verifyToken,
+  upload.single("avatar"),
+  hostController.updateHostProfile
+);
+
+module.exports = router;

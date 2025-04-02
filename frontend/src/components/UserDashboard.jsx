@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import "../CSS/UserDashboard.css";
 import Profile from "./Profile";
-import Overview from "./UserOverview";
+import UserOverview from "./UserOverview";  // Fixed import name
 import CreateHostProfile from "./hosts/CreateHostProfile";
 import Notifications from "./Notifications";
 import generateColorFromEmail from "../utils/generateColor";
@@ -232,7 +232,7 @@ const UserDashboard = () => {
         </div>
         {/* Dashboard Content */}
         <div className="content-wrapper">
-          {activeMenu === "Overview" && <Overview />}
+          {activeMenu === "Overview" && <UserOverview />}
           {activeMenu === "Profile" && <Profile />}
           {activeMenu === "Become a Host" && <CreateHostProfile />}
           {activeMenu === "Notifications" && <Notifications notifications={notifications} />}
