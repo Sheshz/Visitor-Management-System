@@ -15,14 +15,35 @@ import {
   HelpCircle,
   Settings,
   ChevronDown,
+  Users
 } from "lucide-react";
 import "../CSS/UserDashboard.css";
 import Profile from "./Profile";
-import UserOverview from "./UserOverview";  // Fixed import name
+import UserOverview from "./UserOverview";
 import CreateHostProfile from "./hosts/CreateHostProfile";
 import Notifications from "./Notifications";
 import generateColorFromEmail from "../utils/generateColor";
 import useUserData from "../hooks/useUserData";
+import MyVisitation from "../components/user/MyVisitation";
+import AppointmentConfirmation from "./Appointment";
+import HostDirectory from "./hosts/HostDirectory";
+
+// Create a session storage manager to isolate sessions per tab
+const SessionManager = {
+  // Use sessionStorage instead of localStorage for tab-specific storage
+  setItem: (key, value) => {
+    sessionStorage.setItem(key, value);
+  },
+  getItem: (key) => {
+    return sessionStorage.getItem(key);
+  },
+  removeItem: (key) => {
+    sessionStorage.removeItem(key);
+  },
+  clear: () => {
+    sessionStorage.clear();
+  }
+};
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -32,16 +53,25 @@ const UserDashboard = () => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileDropdownRef = useRef(null);
 
-  // Check if token exists and redirect if not
+  // Check if token exists and redirect if not - use sessionStorage instead
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = SessionManager.getItem("token");
     if (!token) {
-      navigate("/login");
-      return;
+      // Transfer token from localStorage to sessionStorage on initial load if available
+      const localToken = localStorage.getItem("token");
+      if (localToken) {
+        SessionManager.setItem("token", localToken);
+        // Remove from localStorage to prevent cross-tab synchronization
+        localStorage.removeItem("token");
+      } else {
+        navigate("/login");
+        return;
+      }
     }
   }, [navigate]);
 
-  // Fetch user data and notifications using the custom hook
+  // Modify useUserData hook to use sessionStorage token (assuming you can modify the hook)
+  // If you can't modify the hook, you may need to pass the token as a prop
   const { userData, notifications, loading, error, refreshData } = useUserData();
 
   // Generate profile color based on user email when available
@@ -67,6 +97,44 @@ const UserDashboard = () => {
     };
   }, [profileDropdownRef]);
 
+  // Store user data in sessionStorage instead of localStorage
+  useEffect(() => {
+    if (userData) {
+      // Store the full name
+      if (userData.firstName && userData.lastName) {
+        SessionManager.setItem("userName", `${userData.firstName} ${userData.lastName}`);
+      } else if (userData.name) {
+        SessionManager.setItem("userName", userData.name);
+      }
+      
+      // Store email if available
+      if (userData.email) {
+        SessionManager.setItem("userEmail", userData.email);
+      }
+      
+      // Store username if available
+      if (userData.username) {
+        SessionManager.setItem("username", userData.username);
+      }
+    }
+  }, [userData]);
+
+  // Listen for storage events to prevent cross-tab data sharing
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      // If localStorage token changes in another tab, don't let it affect this tab
+      if (event.key === 'token' && event.storageArea === localStorage) {
+        // Keep using this tab's session token
+        event.stopPropagation();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
   };
@@ -77,6 +145,7 @@ const UserDashboard = () => {
     { name: "Host Directory", icon: <Book size={20} /> },
     { name: "Appointment", icon: <Calendar size={20} /> },
     { name: "QR Scanner", icon: <QrCode size={20} /> },
+    { name: "My Visitation", icon: <Users size={20} /> },
     { name: "Become a Host", icon: <Home size={20} /> },
     { name: "Notifications", icon: <Bell size={20} /> },
     { name: "Logout", icon: <LogOut size={20} /> },
@@ -96,10 +165,13 @@ const UserDashboard = () => {
     setHasNewNotifications(false);
   };
 
-  // Handle logout
+  // Handle logout - use SessionManager
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userRole");
+    // Clear only sessionStorage
+    SessionManager.clear();
+    // Dispatch a custom event that SessionManager is listening for
+    window.dispatchEvent(new Event("user:logout"));
+    // Redirect to login page
     navigate("/login");
   };
 
@@ -208,7 +280,7 @@ const UserDashboard = () => {
                       className="dropdown-item"
                       onClick={() => {
                         setActiveMenu("Profile");
-                        localStorage.setItem("profileActiveTab", "settings");
+                        SessionManager.setItem("profileActiveTab", "settings");
                       }}
                     >
                       <Settings size={16} />
@@ -236,6 +308,9 @@ const UserDashboard = () => {
           {activeMenu === "Profile" && <Profile />}
           {activeMenu === "Become a Host" && <CreateHostProfile />}
           {activeMenu === "Notifications" && <Notifications notifications={notifications} />}
+          {activeMenu === "My Visitation" && <MyVisitation />}
+          {activeMenu === "Appointment"&& <AppointmentConfirmation/>}
+          {activeMenu === "Host Directory" && <HostDirectory/>}
           {/* Add other menu components as needed */}
         </div>
       </div>

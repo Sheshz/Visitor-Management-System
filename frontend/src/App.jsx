@@ -10,10 +10,13 @@ import HostLogin from "./components/hosts/HostLogin";
 import HostProfile from "./pages/HostProfile";
 import ExpertsPage from "./pages/ExpertsPage";
 import AboutUsPage from "./pages/AboutUsPage";
-import ApplyHostPage from "./components/hosts/ApplyHostPage";
+
 import ProfilePage from "./pages/ProfilePage";
 import SessionManager from "./components/SessionManager";
 import NotFound from "./components/NotFound";
+import TokenWarningModal from './components/common/TokenWarningModal';
+import { UserService } from './services/UserService';  // Changed to named import
+import HostRegistrationFlow from "./components/hosts/HostRegistrationFlow";
 
 // Protected route component
 const ProtectedRoute = ({ children }) => {
@@ -28,6 +31,15 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
+  const userService = new UserService();  // Changed variable name to lowercase
+  
+  const handleRefreshToken = () => {
+    userService.refreshAccessToken();
+  };
+  
+  const handleLogout = () => {
+    userService.logout();
+  };
   return (
     <Router>
       {/* SessionManager handles token validation and inactivity logout */}
@@ -50,17 +62,17 @@ function App() {
             <HostDashboard />
           </ProtectedRoute>
         } />
-        
-        <Route path="/create-host" element={
+       
+        <Route path="/createhost" element={
           <ProtectedRoute>
             <CreateHostProfile />
           </ProtectedRoute>
         } />
         
-        <Route path="/host-login" element={<HostLogin />} />
+        <Route path="/hostlogin" element={<HostLogin />} />
         <Route path="/experts" element={<ExpertsPage />} />
         <Route path="/about" element={<AboutUsPage />} />
-        <Route path="/apply-host" element={<ApplyHostPage />} />
+        <Route path="/host/register" element={<HostRegistrationFlow />} />
         
         <Route path="/profile" element={
           <ProtectedRoute>
@@ -77,6 +89,12 @@ function App() {
         {/* Catch-all route for 404 Not Found */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+
+      <TokenWarningModal
+          warningThreshold={60}
+          onRefresh={handleRefreshToken}
+          onLogout={handleLogout}
+        />
     </Router>
   );
 }

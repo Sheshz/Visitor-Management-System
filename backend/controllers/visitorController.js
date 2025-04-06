@@ -1,4 +1,5 @@
 // controllers/visitorController.js
+const mongoose = require("mongoose");
 const Visitor = require("../models/Visitor");
 const Notification = require("../models/Notification");
 const Host = require("../models/Host");
@@ -90,6 +91,11 @@ exports.getVisitorById = async (req, res) => {
       });
     }
     
+    // Validate ObjectId before querying
+    if (!mongoose.Types.ObjectId.isValid(visitorId)) {
+      return res.status(400).json({ success: false, message: 'Invalid visitor ID' });
+    }
+
     // Normal case: Find by ObjectId
     visitor = await Visitor.findById(visitorId).populate("host", "name department");
     

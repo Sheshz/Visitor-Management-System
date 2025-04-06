@@ -15,4 +15,7 @@ router.put("/password", verifyToken, userController.updatePassword);
 router.delete("/me", verifyToken, userController.deleteAccount);
 router.get("/profile", verifyToken, userController.getprofile);
 
+// Add this route to your existing auth routes
+router.post('/refresh', userController.refreshToken);
+
 module.exports = router;

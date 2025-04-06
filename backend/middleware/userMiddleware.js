@@ -30,23 +30,22 @@ const verifyToken = function (req, res, next) {
   }
 };
 
-const auth = async (req, res, next) => {
+// Check your userMiddleware.js file for something like this
+const auth = (req, res, next) => {
   try {
-    // Log the token for debugging
-    console.log("Token received:", req.header("Authorization"));
+    const token = req.header('Authorization').replace('Bearer ', '');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    const token = req.header("Authorization").replace("Bearer ", "");
-    const decoded = jwt.verify(token, config.jwtSecret);
-
-    // Log the decoded user for debugging
-    console.log("Decoded user:", decoded);
-
-    // This is crucial - it should set req.user with the user info
-    req.user = { id: decoded.id };
-
+    // This part is likely failing - no user ID in the decoded token
+    if (!decoded.userId) {
+      throw new Error('Invalid token: no user ID found');
+    }
+    
+    req.user = decoded;
+    req.token = token;
     next();
   } catch (error) {
-    res.status(401).json({ message: "Please authenticate" });
+    res.status(401).send({ error: error.message });
   }
 };
 

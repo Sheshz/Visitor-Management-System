@@ -13,7 +13,7 @@ const appointmentRoutes = require("./routes/appointmentRoutes");
 //const meetingRoutes = require("./routes/meetingRoutes");
 const hostRoutes = require("./routes/hostRoutes");
 const statisticsRoutes = require("./routes/statisticsRoutes");
-const notificationRoutes = require("./routes/notificationRoutes");
+const notificationRoutes = require('./routes/notificationRoutes');
 //const authRoutes = require("./routes/authRoutes"); // New auth routes import
 
 // Load environment variables
@@ -43,9 +43,9 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/users", userRoutes);
 app.use("/api/visitors", visitorRoutes);
 app.use("/api/appointments", appointmentRoutes);
-app.use("/api/notifications", notificationRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use("/api/statistics", statisticsRoutes);
-app.use("/api/hosts", hostRoutes);
+app.use("/api/host", hostRoutes);
 
 app.get("/api/public", (req, res) => {
   res.send("This is a public route!");

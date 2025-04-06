@@ -1,4 +1,4 @@
-/* Profile.css - Updated with new settings styles */
+/* Profile.css - Complete with Face Unlock styles */
 
 /* Main container */
 .profile-container {
@@ -337,12 +337,20 @@
   background-color: #fee2e2;
 }
 
+.face-icon {
+  background-color: #dbeafe; /* Light blue background for face icon */
+}
+
 .icon-color {
   color: #4f46e5;
 }
 
 .data-icon .icon-color {
   color: #b91c1c;
+}
+
+.face-icon .icon-color {
+  color: #1d4ed8; /* Darker blue for face icon */
 }
 
 .settings-card-title {
@@ -380,13 +388,13 @@
   transition: all 0.2s;
 }
 
-.view-button, .export-button {
+.view-button, .export-button, .enable-button {
   background-color: #2563eb;
   color: white;
   border: none;
 }
 
-.view-button:hover, .export-button:hover {
+.view-button:hover, .export-button:hover, .enable-button:hover {
   background-color: #1d4ed8;
 }
 
@@ -405,10 +413,154 @@
   cursor: not-allowed;
 }
 
+/* Disable button for face unlock */
+.disable-button {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+}
+
+.disable-button:hover {
+  background-color: #e5e7eb;
+}
+
 .history-panel {
   margin-top: 16px;
   border-top: 1px solid #e5e7eb;
   padding-top: 16px;
+}
+
+/* Face Unlock Setup Panel */
+.face-setup-panel {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.face-setup-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.face-setup-step h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #111827;
+}
+
+.face-camera-placeholder {
+  width: 200px;
+  height: 200px;
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.face-scanning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.scanning-animation {
+  width: 100%;
+  height: 2px;
+  background-color: #2563eb;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  animation: scanLine 2s infinite;
+}
+
+@keyframes scanLine {
+  0% {
+    transform: translateY(-50px);
+  }
+  50% {
+    transform: translateY(50px);
+  }
+  100% {
+    transform: translateY(-50px);
+  }
+}
+
+.face-setup-instructions {
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 24px;
+  max-width: 400px;
+}
+
+.face-setup-actions {
+  display: flex;
+  gap: 16px;
+}
+
+.capture-button {
+  padding: 10px 16px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.capture-button:hover {
+  background-color: #1d4ed8;
+}
+
+.capture-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.complete-button {
+  padding: 10px 16px;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.complete-button:hover {
+  background-color: #059669;
+}
+
+.face-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.success-icon {
+  width: 60px;
+  height: 60px;
+  background-color: #d1fae5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: #10b981;
+  margin-bottom: 16px;
 }
 
 /* Settings Danger Section */
@@ -737,6 +889,21 @@
   .clear-history-button {
     width: 100%;
   }
+  
+  /* Face unlock responsive */
+  .face-camera-placeholder {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .face-setup-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .face-setup-actions button {
+    width: 100%;
+  }
 }
 
 /* Small mobile devices */
@@ -756,5 +923,11 @@
 
   .danger-zone {
     padding: 16px;
+  }
+  
+  /* Face unlock small screen adjustments */
+  .face-camera-placeholder {
+    width: 120px;
+    height: 120px;
   }
 }

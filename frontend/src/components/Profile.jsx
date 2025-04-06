@@ -12,9 +12,10 @@ import {
   Trash2,
   User,
   Clock,
-  Database
+  Database,
+  Camera // Added Camera icon for face unlock
 } from "lucide-react";
-import ProfileIcon from "../components/ProfileIcon"; // Import the ProfileIcon component
+import ProfileIcon from "../components/ProfileIcon";
 import generateColorFromEmail from "../utils/generateColor";
 import "../CSS/Profile.css";
 
@@ -48,6 +49,11 @@ const Profile = () => {
   ]);
   const [clearHistoryConfirm, setClearHistoryConfirm] = useState(false);
   const [viewSearchHistory, setViewSearchHistory] = useState(false);
+  // Add state for face unlock
+  const [faceUnlockEnabled, setFaceUnlockEnabled] = useState(false);
+  const [showFaceSetup, setShowFaceSetup] = useState(false);
+  const [faceSetupStep, setFaceSetupStep] = useState(1);
+  const [faceCapturing, setFaceCapturing] = useState(false);
 
   const token = localStorage.getItem("token");
 
@@ -75,6 +81,8 @@ const Profile = () => {
           lastName: response.data.lastName,
           email: response.data.email,
         });
+        // Check if face unlock is enabled for this user
+        setFaceUnlockEnabled(response.data.faceUnlockEnabled || false);
         setError(null);
       } catch (error) {
         setError("Failed to load profile. Please try again later.");
@@ -240,6 +248,67 @@ const Profile = () => {
   const handleExportData = () => {
     // In a real app, this would trigger a data export
     showNotification("Your data is being exported. You'll receive it by email soon!");
+  };
+
+  // Face unlock functions
+  const toggleFaceUnlock = async () => {
+    if (faceUnlockEnabled) {
+      // Disable face unlock
+      try {
+        await axios.put(
+          "http://localhost:5000/api/users/face-unlock",
+          { enabled: false },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setFaceUnlockEnabled(false);
+        showNotification("Face Unlock has been disabled");
+      } catch (error) {
+        console.error("Error disabling face unlock:", error);
+        showNotification("Failed to disable Face Unlock", "error");
+      }
+    } else {
+      // Show face setup
+      setShowFaceSetup(true);
+      setFaceSetupStep(1);
+    }
+  };
+
+  const startFaceCapture = () => {
+    setFaceCapturing(true);
+    // Simulate face scanning process
+    setTimeout(() => {
+      setFaceCapturing(false);
+      setFaceSetupStep(2);
+    }, 3000);
+  };
+
+  const completeFaceSetup = async () => {
+    try {
+      await axios.put(
+        "http://localhost:5000/api/users/face-unlock",
+        { enabled: true },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setFaceUnlockEnabled(true);
+      setShowFaceSetup(false);
+      showNotification("Face Unlock has been successfully enabled");
+    } catch (error) {
+      console.error("Error enabling face unlock:", error);
+      showNotification("Failed to enable Face Unlock", "error");
+    }
+  };
+
+  const cancelFaceSetup = () => {
+    setShowFaceSetup(false);
+    setFaceSetupStep(1);
   };
 
   if (loading) {
@@ -479,6 +548,92 @@ const Profile = () => {
           {activeTab === "settings" && (
             <div className="settings-section">
               <h1 className="account-settings-title">Account Settings</h1>
+              
+              {/* New Face Unlock Section */}
+              <div className="settings-card">
+                <div className="settings-card-header">
+                  <div className="settings-card-icon face-icon">
+                    <Camera className="icon-color" />
+                  </div>
+                  <div className="settings-card-title">
+                    <h2>Face Unlock</h2>
+                    <p>Enable Face ID to securely sign in to your account without a password.</p>
+                  </div>
+                </div>
+                <div className="settings-card-actions single-action">
+                  <button 
+                    className={faceUnlockEnabled ? "disable-button" : "enable-button"} 
+                    onClick={toggleFaceUnlock}
+                  >
+                    {faceUnlockEnabled ? "Disable Face Unlock" : "Enable Face Unlock"}
+                  </button>
+                </div>
+
+                {showFaceSetup && (
+                  <div className="face-setup-panel">
+                    {faceSetupStep === 1 && (
+                      <div className="face-setup-step">
+                        <h3>Face ID Setup</h3>
+                        <div className="face-camera-placeholder">
+                          {faceCapturing ? (
+                            <div className="face-scanning">
+                              <div className="scanning-animation"></div>
+                              <p>Scanning face...</p>
+                            </div>
+                          ) : (
+                            <Camera size={64} />
+                          )}
+                        </div>
+                        <p className="face-setup-instructions">
+                          Position your face in the frame and click "Capture" to scan your face.
+                        </p>
+                        <div className="face-setup-actions">
+                          <button
+                            className="cancel-button"
+                            onClick={cancelFaceSetup}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            className="capture-button"
+                            onClick={startFaceCapture}
+                            disabled={faceCapturing}
+                          >
+                            {faceCapturing ? "Capturing..." : "Capture"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {faceSetupStep === 2 && (
+                      <div className="face-setup-step">
+                        <h3>Face ID Captured</h3>
+                        <div className="face-success">
+                          <div className="success-icon">✓</div>
+                          <p>Your face has been successfully captured</p>
+                        </div>
+                        <p className="face-setup-instructions">
+                          You can now use Face ID to sign in to your account. For best results, set up Face ID in good lighting conditions.
+                        </p>
+                        <div className="face-setup-actions">
+                          <button
+                            className="cancel-button"
+                            onClick={cancelFaceSetup}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            className="complete-button"
+                            onClick={completeFaceSetup}
+                          >
+                            Complete Setup
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               
               {/* Search History Section - Updated to match the design */}
               <div className="settings-card">

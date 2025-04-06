@@ -6,8 +6,8 @@ const useUserData = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // Check if the API endpoint is available
+
+  // Improved endpoint availability check - uses relative URLs consistently
   const checkEndpointAvailability = async (endpoint) => {
     try {
       await apiClient.head(endpoint);
@@ -22,19 +22,19 @@ const useUserData = () => {
   const refreshData = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       // First try to get user data
       const userResponse = await apiClient.get("/api/users/me");
       setUserData(userResponse.data);
-      
+
       // Check if notifications endpoint exists before attempting to fetch
-      // Fix: Use relative URL for consistency with setupPolling
-      const notificationsAvailable = await checkEndpointAvailability("http://localhost:5000/api/notifications");
-      
+      // Fix: Use relative URL consistently
+      const notificationsAvailable = await checkEndpointAvailability("/api/notifications/user");
+
       if (notificationsAvailable) {
         try {
-          const notifResponse = await apiClient.get("/api/notifications");
+          const notifResponse = await apiClient.get("/api/notifications/user");
           setNotifications(notifResponse.data || []);
         } catch (notifError) {
           console.error("Error refreshing notifications:", notifError);
@@ -63,27 +63,27 @@ const useUserData = () => {
       setLoading(false);
       return;
     }
-    
+
     let isMounted = true;
     let interval;
-    
+
     const fetchData = async () => {
       if (!isMounted) return;
-      
+
       try {
         // First try to get user data
         const userResponse = await apiClient.get("/api/users/me");
         if (isMounted) {
           setUserData(userResponse.data);
         }
-        
+
         // Check if notifications endpoint exists before attempting to fetch
-        // Fix: Use relative URL for consistency
-        const notificationsAvailable = await checkEndpointAvailability("http://localhost:5000/api/notifications");
-        
+        // Fix: Use correct endpoint path
+        const notificationsAvailable = await checkEndpointAvailability("/api/notifications/user");
+
         if (notificationsAvailable) {
           try {
-            const notifResponse = await apiClient.get("/api/notifications");
+            const notifResponse = await apiClient.get("/api/notifications/user");
             if (isMounted) {
               setNotifications(notifResponse.data || []);
             }
@@ -117,14 +117,15 @@ const useUserData = () => {
 
     // Setup polling for notifications
     const setupPolling = async () => {
-      // Fix: Use relative URL for consistency instead of absolute URL
-      const notificationsAvailable = await checkEndpointAvailability("http://localhost:5000/api/notifications");
-      
+      // Fix: Use correct endpoint path consistently
+      const notificationsAvailable = await checkEndpointAvailability("/api/notifications/user");
+
       if (notificationsAvailable && isMounted) {
         interval = setInterval(() => {
           if (!isMounted) return;
-          
-          apiClient.get("/api/notifications")
+
+          apiClient
+            .get("/api/notifications/user")
             .then((response) => {
               if (isMounted) {
                 setNotifications(response.data || []);
@@ -137,10 +138,10 @@ const useUserData = () => {
         }, 60000); // Every minute
       }
     };
-    
+
     // Initial data load
     fetchData();
-    
+
     // Setup polling after initial load
     setupPolling();
 
@@ -154,20 +155,20 @@ const useUserData = () => {
   // Function to mark notification as read (with endpoint availability check)
   const markNotificationAsRead = async (notificationId) => {
     try {
-      const notificationsAvailable = await checkEndpointAvailability("http://localhost:5000/api/notifications");
-      
+      const notificationsAvailable = await checkEndpointAvailability("/api/notifications/user");
+
       if (notificationsAvailable) {
         await apiClient.put(`/api/notifications/${notificationId}/read`);
-        
+
         // Update local state to reflect the change
-        setNotifications(prevNotifications => 
-          prevNotifications.map(notification => 
-            notification.id === notificationId 
-              ? { ...notification, read: true } 
+        setNotifications((prevNotifications) =>
+          prevNotifications.map((notification) =>
+            notification.id === notificationId
+              ? { ...notification, read: true }
               : notification
           )
         );
-        
+
         return true; // Success indicator
       } else {
         console.log("Notifications endpoint not available for marking as read");
@@ -182,19 +183,24 @@ const useUserData = () => {
   // Function to mark all notifications as read
   const markAllNotificationsAsRead = async () => {
     try {
-      const notificationsAvailable = await checkEndpointAvailability("http://localhost:5000/api/notifications");
-      
+      const notificationsAvailable = await checkEndpointAvailability("/api/notifications/user");
+
       if (notificationsAvailable) {
-        await apiClient.put('/api/notifications/read-all');
-        
+        await apiClient.put("/api/notifications/read-all");
+
         // Update local state to reflect all notifications read
-        setNotifications(prevNotifications => 
-          prevNotifications.map(notification => ({ ...notification, read: true }))
+        setNotifications((prevNotifications) =>
+          prevNotifications.map((notification) => ({
+            ...notification,
+            read: true,
+          }))
         );
-        
+
         return true; // Success indicator
       } else {
-        console.log("Notifications endpoint not available for marking all as read");
+        console.log(
+          "Notifications endpoint not available for marking all as read"
+        );
         return false; // Failure indicator
       }
     } catch (err) {
@@ -205,29 +211,38 @@ const useUserData = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await apiClient.get("/api/notifications");
+      const response = await apiClient.get("/api/notifications/user");
       return response.data;
     } catch (error) {
       // If the endpoint returns 404, handle it gracefully
       if (error.response && error.response.status === 404) {
-        console.log("http://localhost:5000/api/notifications endpoint not available");
+        console.log("Notifications endpoint not available");
         return { notifications: [], unreadCount: 0 }; // Return empty data
       }
-      
+
       // For other errors, continue with the throw
       throw error;
     }
   };
-  return { 
-    userData, 
-    notifications, 
-    loading, 
-    error, 
+
+  // Add function to get unread count
+  const getUnreadCount = useCallback(() => {
+    return notifications.filter(notification => !notification.read).length;
+  }, [notifications]);
+
+  return {
+    userData,
+    notifications,
+    loading,
+    error,
     refreshData,
     fetchNotifications,
     markNotificationAsRead,
     markAllNotificationsAsRead,
-    hasUnreadNotifications: notifications.some(notification => !notification.read)
+    hasUnreadNotifications: notifications.some(
+      (notification) => !notification.read
+    ),
+    unreadCount: getUnreadCount(),
   };
 };
 

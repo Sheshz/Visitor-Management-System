@@ -1,0 +1,417 @@
+/* Host Directory Styles */
+.host-directory-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+  }
+  
+  /* Create a scrollable container for the main content */
+  .host-directory-scrollable-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+    position: relative;
+  }
+  
+  /* Fixed Header Styles */
+  .directory-header {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 10;
+    padding: 20px 0;
+    margin-bottom: 30px;
+    text-align: center;
+  }
+  
+  .directory-header h1 {
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 32px;
+  }
+  
+  /* Search Container */
+  .search-container {
+    display: flex;
+    max-width: 600px;
+    margin: 0 auto;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 50px;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .search-input {
+    flex: 1;
+    padding: 15px 45px 15px 20px;
+    border: none;
+    font-size: 16px;
+    outline: none;
+    width: 100%;
+  }
+  
+  .clear-search-button {
+    position: absolute;
+    right: 70px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 5px;
+    line-height: 1;
+    z-index: 2;
+  }
+  
+  .clear-search-button:hover {
+    color: #333;
+  }
+  
+  .search-button {
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    padding: 0 25px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+  }
+  
+  .search-button:hover {
+    background-color: #357abd;
+  }
+  
+  /* Notification Bar */
+  .notification-bar {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    animation: fadeIn 0.3s ease-in-out;
+    border-left: 4px solid #ffeeba;
+  }
+  
+  .notification-bar.retrying {
+    background-color: #e8f4fd;
+    color: #0c5460;
+    border-left-color: #bee5eb;
+  }
+  
+  .notification-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .notification-icon {
+    font-size: 18px;
+    color: #e5a000;
+  }
+  
+  .retry-button {
+    background-color: #ffc107;
+    color: #212529;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .retry-button:hover {
+    background-color: #e0a800;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  .retry-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .retry-button.retrying {
+    background-color: #6c757d;
+    color: white;
+    opacity: 0.85;
+    cursor: not-allowed;
+  }
+  
+  .retry-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+  }
+  
+  /* Loading states */
+  .loading-container {
+    text-align: center;
+    padding: 60px 0;
+    color: #666;
+  }
+  
+  .loading-spinner {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(74, 144, 226, 0.3);
+    border-radius: 50%;
+    border-top-color: #4a90e2;
+    animation: spin 1s ease-in-out infinite;
+    margin-bottom: 20px;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  .overlay-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  /* No results */
+  .no-results {
+    text-align: center;
+    padding: 40px 0;
+    color: #666;
+    font-size: 18px;
+  }
+  
+  .clear-search-button-large {
+    background-color: #f0f0f0;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    margin-top: 15px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+  }
+  
+  .clear-search-button-large:hover {
+    background-color: #e0e0e0;
+  }
+  
+  /* All Hosts Section */
+  .all-hosts-section {
+    margin-bottom: 40px;
+  }
+  
+  .all-hosts-section h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+    color: #333;
+  }
+  
+  .hosts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+  }
+  
+  /* Host Card */
+  .host-card {
+    background-color: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    padding: 20px;
+  }
+  
+  .host-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+  
+  .host-card-header {
+    display: flex;
+    align-items: center;
+    position: relative;
+    margin-bottom: 15px;
+  }
+  
+  .host-avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-right: 15px;
+    border: 2px solid #4a90e2;
+    background-color: #e5e5e5;
+    flex-shrink: 0;
+  }
+  
+  .host-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .host-info {
+    flex: 1;
+  }
+  
+  .host-info h3 {
+    margin: 0 0 5px 0;
+    font-size: 18px;
+    color: #333;
+  }
+  
+  .host-title {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .host-location {
+    font-size: 12px;
+    color: #777;
+  }
+  
+  .host-rating {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: #4a90e2;
+    color: white;
+    font-size: 14px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-weight: bold;
+  }
+  
+  .host-specialties {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  
+  .specialty-tag {
+    background-color: #f0f7ff;
+    color: #4a90e2;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 20px;
+  }
+  
+  .host-card-footer {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+  }
+  
+  .view-profile-button {
+    flex: 1;
+    background-color: #f0f0f0;
+    border: none;
+    padding: 10px 0;
+    border-radius: 4px;
+    font-weight: 500;
+    color: #555;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .view-profile-button:hover {
+    background-color: #e0e0e0;
+  }
+  
+  .book-button {
+    flex: 1;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    padding: 10px 0;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-align: center;
+  }
+  
+  .book-button:hover {
+    background-color: #357abd;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .hosts-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .host-card-footer {
+      flex-direction: column;
+    }
+    
+    .directory-header h1 {
+      font-size: 24px;
+    }
+    
+    .search-input {
+      padding: 12px 40px 12px 15px;
+    }
+    
+    .notification-bar {
+      flex-direction: column;
+      text-align: center;
+    }
+    
+    .notification-content {
+      margin-bottom: 10px;
+      justify-content: center;
+    }
+    
+    .retry-button {
+      width: 100%;
+      justify-content: center;
+      margin-top: 10px;
+    }
+  }
+  
+  /* Make sure the host directory takes full height when in app */
+  html, body, #root, .app {
+    height: 100%;
+  }

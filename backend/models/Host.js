@@ -1,21 +1,12 @@
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
 
-// Custom function to generate hostID
-const generateHostID = () => {
-  // Generate a unique host ID combining a prefix, random chars, and timestamp
-  const prefix = "HOST";
-  const randomChars = Math.random().toString(36).substring(2, 5).toUpperCase();
-  const timestamp = Date.now().toString().slice(-6);
-  
-  return `${prefix}-${randomChars}-${timestamp}`;
-};
-
 const hostSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true
+    required: true,
+    unique: true, // Ensures one host per user
   },
   hostID: {
     type: String,
@@ -29,6 +20,14 @@ const hostSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true
+  },
+  username: {  // Added this field as it's used in controller
+    type: String,
+    required: true
+  },
+  password: {  // Added this field as it's used in controller
+    type: String,
+    required: false  // Not requiring password as it might be optional
   },
   bio: {
     type: String,

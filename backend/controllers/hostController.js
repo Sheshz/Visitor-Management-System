@@ -5,134 +5,99 @@ const fs = require("fs");
 const path = require("path");
 
 // Create a new host profile
-// Create a new host profile
-const createHost = async (req, res) => {
+const createHostProfile = async (req, res) => {
   try {
-    console.log("Create host process started", { 
-      body: req.body, 
-      file: req.file, 
-      userId: req.user?.id 
-    });
-    
-    // Check if user ID exists
-    if (!req.user || !req.user.id) {
-      console.log("Authentication error: No user ID found in request");
-      return res.status(401).json({ 
-        message: "Authentication error. Please log in again." 
-      });
-    }
-    
-    // Check if user already has a host profile - Enhanced check
-    const existingHost = await Host.findOne({ user: req.user.id });
-    if (existingHost) {
-      console.log("User already has a host profile", { 
-        userId: req.user.id,
-        hostId: existingHost._id,
-        hostID: existingHost.hostID
-      });
-      return res.status(400).json({ 
-        message: "You already have a host profile", 
-        hostID: existingHost.hostID,
-        redirect: "/host/dashboard"  // Redirect path for the frontend
-      });
-    }
+    // Retrieve the user from JWT
+    const userId = req.user.id;
 
-    // Get user data from the database
-    const user = await User.findById(req.user.id);
+    // Check if the user exists
+    const user = await User.findById(userId);
     if (!user) {
-      console.log("User not found", { userId: req.user.id });
       return res.status(404).json({ message: "User not found" });
     }
 
-    console.log("User found successfully", { userId: req.user.id });
-
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(__dirname, '../uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+    // Check if host profile already exists for this user
+    const existingHost = await Host.findOne({ user: userId });
+    if (existingHost) {
+      return res
+        .status(400)
+        .json({ message: "Host profile already exists for this user" });
     }
 
-    // Process file upload if present
+    // Store password directly as provided
+    const password = req.body.password || "";
+
+    // Handle avatar file if uploaded
     let avatarPath = "";
     if (req.file) {
-      console.log("Processing file upload", req.file);
       avatarPath = `/uploads/${req.file.filename}`;
     }
 
-    // Prepare social media object - trim whitespace from URLs
-    const socialMedia = {
-      facebook: req.body.facebook ? req.body.facebook.trim() : "",
-      twitter: req.body.twitter ? req.body.twitter.trim() : "",
-      linkedin: req.body.linkedin ? req.body.linkedin.trim() : "",
-      instagram: req.body.instagram ? req.body.instagram.trim() : ""
-    };
-
-    // Create new host profile with data from request
+    // Create the host profile
     const newHost = new Host({
-      user: req.user.id,
-      name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
-      email: user.email,
+      user: userId,
+      name: req.body.name,
+      email: req.body.email,
+      username: req.body.username,
+      password: password, // Store password as provided
       bio: req.body.bio,
       expertise: req.body.expertise,
       location: req.body.location,
       experience: req.body.experience,
-      socialMedia,
-      avatar: avatarPath
+      socialMedia: {
+        facebook: req.body.facebook || "",
+        twitter: req.body.twitter || "",
+        linkedin: req.body.linkedin || "",
+        instagram: req.body.instagram || "",
+      },
+      avatar: avatarPath,
     });
 
-    console.log("Preparing to save host profile", { hostData: newHost });
+    // Save the new host profile
+    const savedHost = await newHost.save();
 
-    // Save host to database
-    await newHost.save();
-    console.log("Host profile saved successfully");
+    // Update user record to indicate they're a host
+    await User.findByIdAndUpdate(userId, {
+      isHost: true,
+      hostId: savedHost.hostID,
+    });
 
-    // Send confirmation email with PDF attachment
+    // Send confirmation email using emailService
     try {
-      await sendHostProfileEmail(newHost);
-      console.log("Host profile email sent successfully");
+      // Pass the full host object to the email service
+      await sendHostProfileEmail(savedHost);
     } catch (emailError) {
-      console.error("Error sending email, but host profile was created:", emailError);
-      // Continue anyway since the profile was created
+      console.error("Error sending host profile email:", emailError);
+      // Continue with the response even if email fails
     }
 
-    // Return success response with host ID and redirection info
+    // Return success response
     res.status(201).json({
-      success: true,
-      message: "Host profile created successfully! A confirmation email with your host details has been sent to your email address.",
-      host: {
-        id: newHost._id,
-        hostID: newHost.hostID,
-        name: newHost.name,
-        email: newHost.email
-      },
-      redirect: "/host/dashboard"  // Path for redirection
+      message: "Host profile created successfully",
+      hostId: savedHost.hostID,
     });
   } catch (error) {
     console.error("Error creating host profile:", error);
-    // Return a more detailed error message
-    res.status(500).json({ 
-      message: "Server error creating host profile", 
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-// The rest of the controller remains unchanged
+
+// Fetch the current user's host profile
 const getHostProfile = async (req, res) => {
   try {
     // Check if user ID exists
     if (!req.user || !req.user.id) {
-      return res.status(401).json({ 
-        message: "Authentication error. Please log in again." 
+      return res.status(401).json({
+        message: "Authentication error. Please log in again.",
       });
     }
-    
-    const host = await Host.findOne({ user: req.user.id });
-    
+
+    const host = await Host.findOne({ user: req.user.id }).select("-password");
+
     if (!host) {
       return res.status(404).json({ message: "Host profile not found" });
     }
-    
+
     res.json(host);
   } catch (error) {
     console.error("Error fetching host profile:", error);
@@ -144,9 +109,9 @@ const getHostProfile = async (req, res) => {
 const getAvailableHosts = async (req, res) => {
   try {
     const hosts = await Host.find({ isActive: true, isApproved: true })
-      .select('-user -__v')
+      .select("-password -user -__v")
       .sort({ createdAt: -1 });
-    
+
     res.json(hosts);
   } catch (error) {
     console.error("Error fetching available hosts:", error);
@@ -159,19 +124,22 @@ const updateHostProfile = async (req, res) => {
   try {
     // Check if user ID exists
     if (!req.user || !req.user.id) {
-      return res.status(401).json({ 
-        message: "Authentication error. Please log in again." 
+      return res.status(401).json({
+        message: "Authentication error. Please log in again.",
       });
     }
-    
+
     let host = await Host.findOne({ user: req.user.id });
-    
+
     if (!host) {
       return res.status(404).json({ message: "Host profile not found" });
     }
-    
+
     // Prepare update data
     const updateData = {
+      name: req.body.name || host.name,
+      email: req.body.email || host.email,
+      username: req.body.username || host.username,
       bio: req.body.bio || host.bio,
       expertise: req.body.expertise || host.expertise,
       location: req.body.location || host.location,
@@ -180,35 +148,40 @@ const updateHostProfile = async (req, res) => {
         facebook: req.body.facebook || host.socialMedia.facebook,
         twitter: req.body.twitter || host.socialMedia.twitter,
         linkedin: req.body.linkedin || host.socialMedia.linkedin,
-        instagram: req.body.instagram || host.socialMedia.instagram
-      }
+        instagram: req.body.instagram || host.socialMedia.instagram,
+      },
     };
-    
+
+    // Store password directly if provided
+    if (req.body.password) {
+      updateData.password = req.body.password;
+    }
+
     // Handle avatar update if new file is uploaded
     if (req.file) {
       // Delete old avatar file if it exists
       if (host.avatar) {
-        const oldAvatarPath = path.join(__dirname, '..', host.avatar);
+        const oldAvatarPath = path.join(__dirname, "..", "public", host.avatar);
         if (fs.existsSync(oldAvatarPath)) {
           fs.unlinkSync(oldAvatarPath);
         }
       }
-      
+
       // Set new avatar path
       updateData.avatar = `/uploads/${req.file.filename}`;
     }
-    
+
     // Update host profile
     host = await Host.findOneAndUpdate(
       { user: req.user.id },
       { $set: updateData },
       { new: true }
-    );
-    
+    ).select("-password");
+
     res.json({
       success: true,
       message: "Host profile updated successfully",
-      host
+      host,
     });
   } catch (error) {
     console.error("Error updating host profile:", error);
@@ -216,9 +189,28 @@ const updateHostProfile = async (req, res) => {
   }
 };
 
+// Get host by ID
+const getHostById = async (req, res) => {
+  try {
+    const host = await Host.findOne({ hostID: req.params.hostId })
+      .select("-password -user")
+      .populate("user", "name email");
+
+    if (!host) {
+      return res.status(404).json({ message: "Host not found" });
+    }
+
+    res.json(host);
+  } catch (error) {
+    console.error("Error fetching host by ID:", error);
+    res.status(500).json({ message: "Server error fetching host profile" });
+  }
+};
+
 module.exports = {
-  createHost,
+  createHostProfile,
   getHostProfile,
   getAvailableHosts,
-  updateHostProfile
+  updateHostProfile,
+  getHostById,
 };

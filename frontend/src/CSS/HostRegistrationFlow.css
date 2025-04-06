@@ -1,0 +1,168 @@
+/* HostRegistrationFlow.css */
+
+.host-registration-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f5f7fa;
+    padding: 20px;
+  }
+  
+  .registration-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 500px;
+    padding: 40px;
+  }
+  
+  .registration-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .registration-header h1 {
+    font-size: 24px;
+    color: #1976d2;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  
+  .registration-header p {
+    font-size: 16px;
+    color: #64748b;
+    margin: 0;
+  }
+  
+  /* Progress steps */
+  .progress-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    position: relative;
+  }
+  
+  .progress-container::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #e2e8f0;
+    z-index: 0;
+  }
+  
+  .progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .step-number {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #e2e8f0;
+    color: #64748b;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 500;
+    margin-bottom: 5px;
+    border: 2px solid white;
+  }
+  
+  .progress-step.active .step-number {
+    background-color: #1976d2;
+    color: white;
+  }
+  
+  .progress-step span {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+  }
+  
+  /* Form styling */
+  .registration-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #334155;
+  }
+  
+  .form-group input {
+    padding: 12px 16px;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+    background-color: #f8fafc;
+    font-size: 16px;
+    transition: border-color 0.2s;
+  }
+  
+  .form-group input:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+  }
+  
+  .primary-button {
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 10px;
+  }
+  
+  .primary-button:hover {
+    background-color: #1565c0;
+  }
+  
+  .primary-button:disabled {
+    background-color: #90caf9;
+    cursor: not-allowed;
+  }
+  
+  .error-message {
+    color: #e53935;
+    font-size: 14px;
+    padding: 8px 0;
+  }
+  
+  .form-footer {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 14px;
+    color: #64748b;
+  }
+  
+  .form-footer a {
+    color: #1976d2;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .form-footer a:hover {
+    text-decoration: underline;
+  }

@@ -6,6 +6,18 @@ const { sendEmail } = require("../utils/emailService");
 const registerUser = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
+    
+    // Validate required fields
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+    
+    // Check if email is in valid format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+    
     const fullName = `${firstName} ${lastName}`;
 
     // Check if the user already exists
@@ -128,13 +140,25 @@ The GetPass Pro Team
 © 2025 GetPass Pro. All rights reserved.
 `;
 
-    // Send email using the new email service (but with original styling)
-    await sendEmail(email, subject, text, html);
-
-    // Send success response
-    res
-      .status(201)
-      .json({ message: "User registered successfully and email sent." });
+    try {
+      // Log before sending email for debugging
+      console.log(`Attempting to send welcome email to: ${email}`);
+      
+      // Send email using the email service
+      await sendEmail(email, subject, text, html);
+      console.log(`Welcome email sent successfully to: ${email}`);
+      
+      // Send success response
+      res.status(201).json({ message: "User registered successfully and email sent." });
+    } catch (emailError) {
+      console.error("Error sending welcome email:", emailError);
+      
+      // Even if email fails, user is registered
+      res.status(201).json({ 
+        message: "User registered successfully, but welcome email could not be sent.",
+        emailError: emailError.message
+      });
+    }
   } catch (error) {
     console.error("Error during user registration:", error);
     res.status(500).json({
@@ -282,6 +306,10 @@ const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
@@ -383,13 +411,65 @@ The GetPass Pro Team
 © 2025 GetPass Pro. All rights reserved.
 `;
 
-    // Send password reset email
-    await sendEmail(email, subject, textContent, htmlContent);
-
-    res.status(200).json({ message: "Password reset email sent" });
+    try {
+      // Log before sending email for debugging
+      console.log(`Attempting to send password reset email to: ${email}`);
+      
+      // Send password reset email
+      await sendEmail(email, subject, textContent, htmlContent);
+      console.log(`Password reset email sent successfully to: ${email}`);
+      
+      res.status(200).json({ message: "Password reset email sent" });
+    } catch (emailError) {
+      console.error("Error sending reset email:", emailError);
+      res.status(500).json({ 
+        message: "Failed to send password reset email", 
+        error: emailError.message 
+      });
+    }
   } catch (error) {
-    console.error("Error sending reset email:", error);
+    console.error("Error processing reset request:", error);
     res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// Add the refresh token function to your existing auth controller
+const refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+      return res.status(400).json({ message: "Refresh token is required" });
+    }
+    
+    // Validate the refresh token
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid or expired refresh token' });
+    }
+    
+    // Check if user exists
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Generate new access token
+    const newAccessToken = jwt.sign(
+      { userId: decoded.userId },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" } // Match the expiration time used in login
+    );
+    
+    res.json({ 
+      token: newAccessToken,
+      role: user.role
+    });
+  } catch (error) {
+    console.error("Error refreshing token:", error);
+    res.status(401).json({ message: 'Failed to refresh token' });
   }
 };
 
@@ -402,4 +482,5 @@ module.exports = {
   updatePassword,
   deleteAccount,
   forgotPassword,
+  refreshToken,
 };
