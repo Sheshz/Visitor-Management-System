@@ -7,15 +7,68 @@ const useUserData = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Improved endpoint availability check - uses relative URLs consistently
+  // Improved endpoint availability check with CORS handling
   const checkEndpointAvailability = async (endpoint) => {
     try {
-      await apiClient.head(endpoint);
-      return true;
+      // Use OPTIONS method instead of HEAD for preflight check
+      const response = await apiClient({
+        method: "OPTIONS",
+        url: endpoint,
+        headers: {
+          "Access-Control-Request-Method": "GET",
+          "Access-Control-Request-Headers": "x-user-token",
+        },
+      });
+      return response.status < 400;
     } catch (error) {
-      console.log(`${endpoint} endpoint not available`);
+      console.log(`${endpoint} endpoint not available`, error.message);
       return false;
     }
+  };
+
+  // Configure apiClient for CORS
+  const configuredApiClient = {
+    get: async (url, config = {}) => {
+      try {
+        return await apiClient.get(url, {
+          ...config,
+          withCredentials: true, // Send cookies with cross-origin requests
+          headers: {
+            ...config.headers,
+            "Content-Type": "application/json",
+          },
+        });
+      } catch (error) {
+        // Handle CORS errors more gracefully
+        if (error.message && error.message.includes("CORS")) {
+          console.error(`CORS error accessing ${url}:`, error.message);
+          throw new Error(
+            `CORS policy blocked access to ${url}. Ensure the server allows cross-origin requests.`
+          );
+        }
+        throw error;
+      }
+    },
+    put: async (url, data, config = {}) => {
+      try {
+        return await apiClient.put(url, data, {
+          ...config,
+          withCredentials: true,
+          headers: {
+            ...config.headers,
+            "Content-Type": "application/json",
+          },
+        });
+      } catch (error) {
+        if (error.message && error.message.includes("CORS")) {
+          console.error(`CORS error accessing ${url}:`, error.message);
+          throw new Error(
+            `CORS policy blocked access to ${url}. Ensure the server allows cross-origin requests.`
+          );
+        }
+        throw error;
+      }
+    },
   };
 
   // Refresh user data and notifications
@@ -25,16 +78,19 @@ const useUserData = () => {
 
     try {
       // First try to get user data
-      const userResponse = await apiClient.get("/api/users/me");
+      const userResponse = await configuredApiClient.get("/api/users/me");
       setUserData(userResponse.data);
 
       // Check if notifications endpoint exists before attempting to fetch
-      // Fix: Use relative URL consistently
-      const notificationsAvailable = await checkEndpointAvailability("/api/notifications/user");
+      const notificationsAvailable = await checkEndpointAvailability(
+        "/api/notifications/user"
+      );
 
       if (notificationsAvailable) {
         try {
-          const notifResponse = await apiClient.get("/api/notifications/user");
+          const notifResponse = await configuredApiClient.get(
+            "/api/notifications/user"
+          );
           setNotifications(notifResponse.data || []);
         } catch (notifError) {
           console.error("Error refreshing notifications:", notifError);
@@ -47,7 +103,11 @@ const useUserData = () => {
       }
     } catch (err) {
       console.error("Error refreshing user data:", err);
-      setError(err.response?.data?.message || "Failed to refresh user data");
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to refresh user data"
+      );
       // Set default values to prevent null reference errors
       setUserData(null);
       setNotifications([]);
@@ -72,18 +132,21 @@ const useUserData = () => {
 
       try {
         // First try to get user data
-        const userResponse = await apiClient.get("/api/users/me");
+        const userResponse = await configuredApiClient.get("/api/users/me");
         if (isMounted) {
           setUserData(userResponse.data);
         }
 
         // Check if notifications endpoint exists before attempting to fetch
-        // Fix: Use correct endpoint path
-        const notificationsAvailable = await checkEndpointAvailability("/api/notifications/user");
+        const notificationsAvailable = await checkEndpointAvailability(
+          "/api/notifications/user"
+        );
 
         if (notificationsAvailable) {
           try {
-            const notifResponse = await apiClient.get("/api/notifications/user");
+            const notifResponse = await configuredApiClient.get(
+              "/api/notifications/user"
+            );
             if (isMounted) {
               setNotifications(notifResponse.data || []);
             }
@@ -103,7 +166,11 @@ const useUserData = () => {
       } catch (err) {
         if (isMounted) {
           console.error("Error fetching user data:", err);
-          setError(err.response?.data?.message || "Failed to fetch user data");
+          setError(
+            err.response?.data?.message ||
+              err.message ||
+              "Failed to fetch user data"
+          );
           // Set default values to prevent null reference errors
           setUserData(null);
           setNotifications([]);
@@ -115,27 +182,56 @@ const useUserData = () => {
       }
     };
 
-    // Setup polling for notifications
+    // Setup polling for notifications with exponential backoff on errors
     const setupPolling = async () => {
-      // Fix: Use correct endpoint path consistently
-      const notificationsAvailable = await checkEndpointAvailability("/api/notifications/user");
+      let retryDelay = 60000; // Start with 1 minute
+      let consecutiveErrors = 0;
+
+      const notificationsAvailable = await checkEndpointAvailability(
+        "/api/notifications/user"
+      );
 
       if (notificationsAvailable && isMounted) {
-        interval = setInterval(() => {
+        interval = setInterval(async () => {
           if (!isMounted) return;
 
-          apiClient
-            .get("/api/notifications/user")
-            .then((response) => {
+          try {
+            const response = await configuredApiClient.get(
+              "/api/notifications/user"
+            );
+            if (isMounted) {
+              setNotifications(response.data || []);
+              consecutiveErrors = 0;
+              retryDelay = 60000; // Reset to 1 minute after success
+            }
+          } catch (err) {
+            console.error("Error polling notifications:", err);
+
+            // Implement exponential backoff for polling on errors
+            consecutiveErrors++;
+            if (consecutiveErrors > 3) {
+              // Exponential backoff, max 5 minutes
+              retryDelay = Math.min(retryDelay * 2, 300000);
+
+              // Update polling interval
+              if (interval) clearInterval(interval);
               if (isMounted) {
-                setNotifications(response.data || []);
+                interval = setInterval(async () => {
+                  try {
+                    const response = await configuredApiClient.get(
+                      "/api/notifications/user"
+                    );
+                    if (isMounted) {
+                      setNotifications(response.data || []);
+                    }
+                  } catch (err) {
+                    console.error("Error in polling interval:", err);
+                  }
+                }, retryDelay);
               }
-            })
-            .catch((err) => {
-              console.error("Error polling notifications:", err);
-              // Don't update state on polling errors
-            });
-        }, 60000); // Every minute
+            }
+          }
+        }, retryDelay); // Initial polling interval
       }
     };
 
@@ -155,10 +251,14 @@ const useUserData = () => {
   // Function to mark notification as read (with endpoint availability check)
   const markNotificationAsRead = async (notificationId) => {
     try {
-      const notificationsAvailable = await checkEndpointAvailability("/api/notifications/user");
+      const notificationsAvailable = await checkEndpointAvailability(
+        "/api/notifications/user"
+      );
 
       if (notificationsAvailable) {
-        await apiClient.put(`/api/notifications/${notificationId}/read`);
+        await configuredApiClient.put(
+          `/api/notifications/${notificationId}/read`
+        );
 
         // Update local state to reflect the change
         setNotifications((prevNotifications) =>
@@ -183,10 +283,12 @@ const useUserData = () => {
   // Function to mark all notifications as read
   const markAllNotificationsAsRead = async () => {
     try {
-      const notificationsAvailable = await checkEndpointAvailability("/api/notifications/user");
+      const notificationsAvailable = await checkEndpointAvailability(
+        "/api/notifications/user"
+      );
 
       if (notificationsAvailable) {
-        await apiClient.put("/api/notifications/read-all");
+        await configuredApiClient.put("/api/notifications/read-all");
 
         // Update local state to reflect all notifications read
         setNotifications((prevNotifications) =>
@@ -211,7 +313,7 @@ const useUserData = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await apiClient.get("/api/notifications/user");
+      const response = await configuredApiClient.get("/api/notifications/user");
       return response.data;
     } catch (error) {
       // If the endpoint returns 404, handle it gracefully
@@ -227,7 +329,7 @@ const useUserData = () => {
 
   // Add function to get unread count
   const getUnreadCount = useCallback(() => {
-    return notifications.filter(notification => !notification.read).length;
+    return notifications.filter((notification) => !notification.read).length;
   }, [notifications]);
 
   return {
@@ -246,4 +348,5 @@ const useUserData = () => {
   };
 };
 
+// Fix: Add default export
 export default useUserData;

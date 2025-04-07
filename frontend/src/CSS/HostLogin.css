@@ -1,0 +1,422 @@
+/* Host Login Styles */
+.host-login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f8fa;
+    font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 20px;
+  }
+  
+  .host-login-wrapper {
+    display: flex;
+    width: 100%;
+    max-width: 1200px;
+    height: 650px;
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  }
+  
+  /* Left side - Brand & Illustration */
+  .host-login-left {
+    flex: 1;
+    background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+    color: white;
+    padding: 50px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  
+  .host-login-brand {
+    margin-bottom: 40px;
+  }
+  
+  .host-login-brand h2 {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+  }
+  
+  .host-login-brand p {
+    font-size: 16px;
+    opacity: 0.9;
+    margin-top: 8px;
+  }
+  
+  .host-login-illustration {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .host-login-illustration img {
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+  }
+  
+  /* Right side - Login Form */
+  .host-login-right {
+    flex: 1;
+    padding: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .host-login-card {
+    width: 100%;
+    max-width: 450px;
+  }
+  
+  .host-login-header {
+    margin-bottom: 35px;
+  }
+  
+  .host-login-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1E293B;
+    margin: 0;
+  }
+  
+  .host-login-header p {
+    font-size: 16px;
+    color: #64748B;
+    margin-top: 8px;
+  }
+  
+  /* Error message */
+  .host-error-message {
+    background-color: #FEF2F2;
+    color: #DC2626;
+    padding: 14px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    border-left: 4px solid #DC2626;
+  }
+  
+  /* Form styles */
+  .host-login-form {
+    margin-bottom: 20px;
+  }
+  
+  .host-form-group {
+    margin-bottom: 24px;
+  }
+  
+  .host-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #475569;
+    font-size: 15px;
+  }
+  
+  .host-password-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  .host-forgot-password {
+    font-size: 14px;
+    color: #6366F1;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .host-forgot-password:hover {
+    text-decoration: underline;
+  }
+  
+  .host-input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  .host-input-with-icon input {
+    width: 100%;
+    padding: 14px 16px;
+    padding-left: 45px;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    background-color: #F8FAFC;
+    color: #334155;
+  }
+  
+  .host-input-with-icon input:focus {
+    border-color: #6366F1;
+    outline: none;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  }
+  
+  .host-input-with-icon input::placeholder {
+    color: #94A3B8;
+  }
+  
+  .host-input-icon {
+    position: absolute;
+    left: 15px;
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .host-password-toggle {
+    position: absolute;
+    right: 15px;
+    color: #94A3B8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+  }
+  
+  .host-password-toggle:hover {
+    color: #6366F1;
+  }
+  
+  /* Remember me checkbox */
+  .host-remember-me {
+    margin-bottom: 24px;
+  }
+  
+  .host-checkbox-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: #64748B;
+    user-select: none;
+  }
+  
+  .host-checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+  }
+  
+  .host-checkbox {
+    height: 18px;
+    width: 18px;
+    background-color: #F8FAFC;
+    border: 1px solid #CBD5E1;
+    border-radius: 4px;
+    margin-right: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  
+  .host-checkbox:after {
+    content: "";
+    display: none;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    position: relative;
+    top: -1px;
+  }
+  
+  .host-checkbox-container input:checked ~ .host-checkbox {
+    background-color: #6366F1;
+    border-color: #6366F1;
+  }
+  
+  .host-checkbox-container input:checked ~ .host-checkbox:after {
+    display: block;
+  }
+  
+  /* Login button */
+  .host-login-button {
+    width: 100%;
+    background: linear-gradient(to right, #6366F1, #8B5CF6);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .host-login-button:hover {
+    background: linear-gradient(to right, #5154D3, #7C51DF);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    transform: translateY(-1px);
+  }
+  
+  .host-login-button:disabled {
+    background: #CBD5E1;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  /* Loading spinner */
+  .host-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  /* Divider */
+  .host-login-divider {
+    display: flex;
+    align-items: center;
+    margin: 25px 0;
+    color: #94A3B8;
+    font-size: 14px;
+  }
+  
+  .host-login-divider:before,
+  .host-login-divider:after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #E2E8F0;
+  }
+  
+  .host-login-divider span {
+    padding: 0 15px;
+  }
+  
+  /* Social login */
+  .host-social-login {
+    margin-bottom: 25px;
+  }
+  
+  .host-google-button {
+    width: 100%;
+    background-color: white;
+    color: #4B5563;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .host-google-button svg {
+    margin-right: 10px;
+  }
+  
+  .host-google-button:hover {
+    background-color: #F8FAFC;
+    border-color: #CBD5E1;
+  }
+  
+  /* Footer */
+  .host-login-footer {
+    text-align: center;
+    margin-top: 30px;
+    color: #64748B;
+    font-size: 14px;
+  }
+  
+  .host-link {
+    color: #6366F1;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  
+  .host-link:hover {
+    text-decoration: underline;
+  }
+  
+  .host-home-link {
+    display: block;
+    color: #6366F1;
+    font-weight: 500;
+    margin-top: 16px;
+    text-decoration: none;
+  }
+  
+  .host-home-link:hover {
+    text-decoration: underline;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 992px) {
+    .host-login-wrapper {
+      flex-direction: column;
+      height: auto;
+    }
+    
+    .host-login-left {
+      padding: 30px;
+      max-height: 250px;
+    }
+    
+    .host-login-illustration {
+      display: none;
+    }
+    
+    .host-login-right {
+      padding: 40px 30px;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .host-login-container {
+      padding: 10px;
+    }
+    
+    .host-login-wrapper {
+      border-radius: 10px;
+    }
+    
+    .host-login-left {
+      padding: 25px;
+      max-height: 180px;
+    }
+    
+    .host-login-right {
+      padding: 30px 20px;
+    }
+    
+    .host-login-header h1 {
+      font-size: 24px;
+    }
+    
+    .host-login-header p {
+      font-size: 14px;
+    }
+  }

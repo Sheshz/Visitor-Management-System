@@ -26,6 +26,8 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  // Add withCredentials to handle cookies properly
+  withCredentials: true
 });
 
 // Flags to prevent multiple simultaneous operations
@@ -33,22 +35,38 @@ let isRedirecting = false;
 let isRefreshing = false;
 let refreshSubscribers = [];
 
-// Store tokens in localStorage
+// Store tokens in sessionStorage instead of localStorage for better security
 const storeTokens = (accessToken, refreshToken) => {
-  localStorage.setItem("token", accessToken);
+  sessionStorage.setItem("token", accessToken);
   if (refreshToken) {
-    localStorage.setItem("refreshToken", refreshToken);
+    sessionStorage.setItem("refreshToken", refreshToken);
   }
 };
 
-// Get tokens from localStorage
-const getTokens = () => ({
-  token: localStorage.getItem("token"),
-  refreshToken: localStorage.getItem("refreshToken"),
-});
+// Get tokens from sessionStorage with localStorage fallback
+const getTokens = () => {
+  const token = sessionStorage.getItem("token") || localStorage.getItem("token");
+  const refreshToken = sessionStorage.getItem("refreshToken") || localStorage.getItem("refreshToken");
+  
+  // If token was found in localStorage, migrate it to sessionStorage
+  if (!sessionStorage.getItem("token") && localStorage.getItem("token")) {
+    storeTokens(localStorage.getItem("token"), localStorage.getItem("refreshToken"));
+    // Optionally clear localStorage after migration
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+  }
+  
+  return { token, refreshToken };
+};
 
-// Remove tokens from localStorage
+// Remove tokens from both storages
 const removeTokens = () => {
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("refreshToken");
+  sessionStorage.removeItem("userRole");
+  sessionStorage.removeItem("successful_login_endpoint");
+  sessionStorage.removeItem("successful_refresh_endpoint");
+  // Also clear localStorage for good measure
   localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("userRole");
@@ -96,18 +114,17 @@ const endpointMappings = {
     "/api/user/refresh",
     "/users/refresh",
     "/api/users/refresh-token",
-    "/api/auth/refresh", // Added from second snippet
+    "/api/auth/refresh",
   ],
   "/api/notifications": ["/api/notifications/all", "/api/users/notifications"],
   "/api/visitors/current": ["/api/visitors/current", "/api/visitors/active"],
   "/api/hosts/me": ["/api/hosts/me", "/api/users/host"],
-  // Add login endpoint mappings
   "/api/user/login": [
     "/api/users/login",
     "/api/user/login",
     "/user/login",
     "/login",
-    "/api/auth/login", // Added from second snippet
+    "/api/auth/login",
   ],
 };
 
@@ -131,9 +148,10 @@ const refreshToken = async () => {
     }
 
     // Use the successful refresh endpoint if we have one stored
-    const storedRefreshEndpoint = localStorage.getItem(
+    const storedRefreshEndpoint = sessionStorage.getItem(
       "successful_refresh_endpoint"
-    );
+    ) || localStorage.getItem("successful_refresh_endpoint");
+    
     const refreshEndpoints = storedRefreshEndpoint
       ? [
           storedRefreshEndpoint,
@@ -141,7 +159,7 @@ const refreshToken = async () => {
         ]
       : [
           "/api/users/refresh-token",
-          "/api/auth/refresh", // Added from second snippet
+          "/api/auth/refresh",
           ...findAlternativeEndpoint("/api/users/refresh"),
         ];
 
@@ -158,6 +176,7 @@ const refreshToken = async () => {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
+            withCredentials: true
           }
         );
 
@@ -167,7 +186,7 @@ const refreshToken = async () => {
           storeTokens(response.data.token, newRefreshToken);
 
           // Save successful endpoint for future use
-          localStorage.setItem("successful_refresh_endpoint", endpoint);
+          sessionStorage.setItem("successful_refresh_endpoint", endpoint);
           console.log(
             `Token refreshed successfully using endpoint: ${endpoint}`
           );
@@ -219,7 +238,8 @@ apiClient.interceptors.request.use(
           onTokenRefreshed(newToken);
           // Update this request's token
           config.headers.Authorization = `Bearer ${newToken}`;
-          config.headers["x-user-token"] = newToken;
+          // Remove the custom header that's causing CORS issues
+          // config.headers["x-user-token"] = newToken;
         }
       } catch (refreshError) {
         console.error("Error during token refresh:", refreshError);
@@ -228,11 +248,11 @@ apiClient.interceptors.request.use(
       }
     }
 
-    // Add token to request
+    // Add token to request using only the standard Authorization header
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      // Also add x-auth-token header for compatibility with some APIs
-      config.headers["x-user-token"] = token;
+      // Remove the custom header that's causing CORS issues
+      // config.headers["x-user-token"] = token;
     }
 
     // Track request time for performance monitoring
@@ -288,24 +308,30 @@ const tryAlternativeEndpoints = async (
       console.log(`Trying endpoint: ${endpoint}`);
       let response;
 
+      // Add withCredentials to all requests
+      const configWithCredentials = {
+        ...options,
+        withCredentials: true
+      };
+
       if (method.toLowerCase() === "get") {
-        response = await apiClient.get(endpoint, options);
+        response = await apiClient.get(endpoint, configWithCredentials);
       } else if (method.toLowerCase() === "post") {
-        response = await apiClient.post(endpoint, data, options);
+        response = await apiClient.post(endpoint, data, configWithCredentials);
       } else if (method.toLowerCase() === "put") {
-        response = await apiClient.put(endpoint, data, options);
+        response = await apiClient.put(endpoint, data, configWithCredentials);
       } else {
-        response = await apiClient[method.toLowerCase()](endpoint, options);
+        response = await apiClient[method.toLowerCase()](endpoint, configWithCredentials);
       }
 
       console.log(`Success with endpoint: ${endpoint}`);
 
       // Store successful endpoint mapping for future use
       const storedMappings = JSON.parse(
-        localStorage.getItem("endpoint_mappings") || "{}"
+        sessionStorage.getItem("endpoint_mappings") || "{}"
       );
       storedMappings[endpointPath] = endpoint;
-      localStorage.setItem("endpoint_mappings", JSON.stringify(storedMappings));
+      sessionStorage.setItem("endpoint_mappings", JSON.stringify(storedMappings));
 
       return response;
     } catch (error) {
@@ -361,7 +387,7 @@ apiClient.interceptors.response.use(
 
         // Check if we have a known mapping for this endpoint
         const storedMappings = JSON.parse(
-          localStorage.getItem("endpoint_mappings") || "{}"
+          sessionStorage.getItem("endpoint_mappings") || "{}"
         );
         if (storedMappings[path]) {
           // Try the known working endpoint
@@ -379,7 +405,7 @@ apiClient.interceptors.response.use(
 
               // Store successful mapping
               storedMappings[path] = altPath;
-              localStorage.setItem(
+              sessionStorage.setItem(
                 "endpoint_mappings",
                 JSON.stringify(storedMappings)
               );
@@ -430,7 +456,8 @@ apiClient.interceptors.response.use(
           if (newToken) {
             // Update headers with new token
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            originalRequest.headers["x-auth-token"] = newToken;
+            // Remove problematic custom header
+            // originalRequest.headers["x-auth-token"] = newToken;
 
             isRefreshing = false;
             onTokenRefreshed(newToken);
@@ -466,7 +493,8 @@ apiClient.interceptors.response.use(
         return new Promise((resolve) => {
           subscribeTokenRefresh((token) => {
             error.config.headers.Authorization = `Bearer ${token}`;
-            error.config.headers["x-user-token"] = token;
+            // Remove problematic custom header
+            // error.config.headers["x-user-token"] = token;
             resolve(apiClient(error.config));
           });
         });
@@ -494,7 +522,6 @@ apiClient.interceptors.response.use(
 
 /**
  * Helper methods for common API operations
- * Merged with the simpler implementation from the second snippet
  */
 const apiHelper = {
   // Check if an endpoint is available
@@ -502,7 +529,7 @@ const apiHelper = {
     try {
       // First check if we have a known working alternative
       const storedMappings = JSON.parse(
-        localStorage.getItem("endpoint_mappings") || "{}"
+        sessionStorage.getItem("endpoint_mappings") || "{}"
       );
       if (storedMappings[endpoint]) {
         try {
@@ -528,10 +555,10 @@ const apiHelper = {
 
             // Store this mapping
             const storedMappings = JSON.parse(
-              localStorage.getItem("endpoint_mappings") || "{}"
+              sessionStorage.getItem("endpoint_mappings") || "{}"
             );
             storedMappings[endpoint] = altEndpoint;
-            localStorage.setItem(
+            sessionStorage.setItem(
               "endpoint_mappings",
               JSON.stringify(storedMappings)
             );
@@ -554,7 +581,7 @@ const apiHelper = {
     try {
       // Check for known working endpoint
       const storedMappings = JSON.parse(
-        localStorage.getItem("endpoint_mappings") || "{}"
+        sessionStorage.getItem("endpoint_mappings") || "{}"
       );
       if (storedMappings[endpoint]) {
         try {
@@ -596,7 +623,8 @@ const apiHelper = {
   // Try login with multiple endpoint variations
   tryLogin: async (credentials) => {
     // Try to use previously successful endpoint if available
-    const previousEndpoint = localStorage.getItem("successful_login_endpoint");
+    const previousEndpoint = sessionStorage.getItem("successful_login_endpoint") || 
+                             localStorage.getItem("successful_login_endpoint");
     if (previousEndpoint) {
       try {
         const response = await apiClient.post(previousEndpoint, credentials);
@@ -607,7 +635,7 @@ const apiHelper = {
           storeTokens(response.data.token, refreshToken);
 
           // Save the endpoint for future use
-          localStorage.setItem("successful_login_endpoint", previousEndpoint);
+          sessionStorage.setItem("successful_login_endpoint", previousEndpoint);
           return response;
         }
       } catch (error) {
@@ -636,7 +664,7 @@ const apiHelper = {
             ? response.config.url
             : `${API_URL}${response.config.url}`;
           const urlObj = new URL(fullUrl);
-          localStorage.setItem("successful_login_endpoint", urlObj.pathname);
+          sessionStorage.setItem("successful_login_endpoint", urlObj.pathname);
         } catch (urlError) {
           // Fallback: just store the raw path if URL parsing fails
           console.log("Error parsing URL:", urlError.message);
@@ -645,7 +673,7 @@ const apiHelper = {
           const pathOnly = path.includes("://")
             ? path.split("/").slice(3).join("/")
             : path;
-          localStorage.setItem(
+          sessionStorage.setItem(
             "successful_login_endpoint",
             pathOnly.startsWith("/") ? pathOnly : `/${pathOnly}`
           );
@@ -719,7 +747,7 @@ const apiHelper = {
   handleMissingEndpoint: async (endpoint, fallbackData = null) => {
     // Check if we know this endpoint is unavailable (to avoid repeated attempts)
     const unavailableEndpoints = JSON.parse(
-      localStorage.getItem("unavailable_endpoints") || "[]"
+      sessionStorage.getItem("unavailable_endpoints") || "[]"
     );
 
     if (unavailableEndpoints.includes(endpoint)) {
@@ -741,7 +769,7 @@ const apiHelper = {
 
       // Mark as unavailable for future reference
       unavailableEndpoints.push(endpoint);
-      localStorage.setItem(
+      sessionStorage.setItem(
         "unavailable_endpoints",
         JSON.stringify([...new Set(unavailableEndpoints)])
       );
@@ -749,7 +777,7 @@ const apiHelper = {
     }
   },
 
-  // New function from second snippet: Try multiple endpoints for the same resource
+  // Try multiple endpoints for the same resource
   tryAlternateEndpoints: async (endpoints, fallbackValue = null) => {
     for (const endpoint of endpoints) {
       try {

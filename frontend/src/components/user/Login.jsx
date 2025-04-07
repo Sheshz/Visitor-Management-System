@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+<<<<<<< HEAD
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import apiClient, {
   apiHelper,
@@ -6,6 +7,21 @@ import apiClient, {
   getTokens,
   storeTokens,
 } from "../../utils/apiClient";
+=======
+import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
+import {
+  FiMail,
+  FiLock,
+  FiEye,
+  FiEyeOff,
+  FiShield,
+  FiRefreshCw,
+  FiAlertTriangle,
+  FiKey,
+  FiHome,
+} from "react-icons/fi";
+>>>>>>> 86eca6d (Update user login)
 import "../../CSS/Login.css";
 import {
   FiMail,
@@ -19,15 +35,24 @@ import {
   FiHome,
 } from "react-icons/fi";
 
-const Login = () => {
+// Import the enhanced SessionManager
+import { SessionManager } from "../../utils/SessionManager";
+
+const UserLogin = () => {
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
   });
-  const [message, setMessage] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [serverTesting, setServerTesting] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [inputFocus, setInputFocus] = useState({
+    email: false,
+    password: false,
+  });
   const [rememberMe, setRememberMe] = useState(false);
+<<<<<<< HEAD
   const [serverStatus, setServerStatus] = useState("checking"); // "checking", "online", "offline"
   const [showPassword, setShowPassword] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -36,89 +61,32 @@ const Login = () => {
     email: false,
     password: false,
   });
+=======
+>>>>>>> 86eca6d (Update user login)
   const navigate = useNavigate();
-  const location = useLocation();
 
-  // Check server status on component mount
+  // Check for existing session
   useEffect(() => {
-    const checkServerStatus = async () => {
-      try {
-        // Try to access the base API URL to check if server is running
-        await fetch(API_URL, { method: "HEAD", mode: "no-cors" });
-        setServerStatus("online");
-      } catch (error) {
-        console.error("Server connection error:", error);
-        setServerStatus("offline");
-        setMessage({
-          type: "error",
-          text: "Cannot connect to the server. Please make sure the backend server is running.",
-        });
-      }
-    };
-
-    checkServerStatus();
-  }, []);
-
-  // Check for URL parameters on component mount
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-
-    // Handle expired session message
-    if (params.get("expired")) {
-      const reason = params.get("reason") || "session_expired";
-      let errorMessage = "Your session has expired. Please log in again.";
-
-      if (reason === "inactivity") {
-        errorMessage =
-          "You've been logged out due to inactivity. Please log in again.";
-      }
-
-      setMessage({ type: "warning", text: errorMessage });
+    // Check if already authenticated with valid token
+    if (SessionManager.isAuthenticated()) {
+      navigate("/dashboard");
+      return;
     }
-    // Handle logout message
-    else if (params.get("logout") === "true") {
-      setMessage({
-        type: "info",
-        text: "You have been successfully logged out.",
-      });
+    
+    // Try to transfer from localStorage if needed
+    const transferred = SessionManager.transferFromLocalStorage();
+    if (transferred) {
+      navigate("/dashboard");
     }
-  }, [location.search]);
-
-  // Add event listener for auth expired events
-  useEffect(() => {
-    const handleAuthExpired = () => {
-      setMessage({
-        type: "warning",
-        text: "Your session has expired. Please log in again.",
-      });
-    };
-
-    window.addEventListener("user:expired", handleAuthExpired);
-
-    return () => {
-      window.removeEventListener("user:expired", handleAuthExpired);
-    };
-  }, []);
-
-  // Check for remembered email
-  useEffect(() => {
-    const rememberedEmail = localStorage.getItem("rememberedEmail");
-    if (rememberedEmail) {
-      setCredentials((prev) => ({
-        ...prev,
-        email: rememberedEmail,
-      }));
-      setRememberMe(true);
-    }
-  }, []);
+  }, [navigate]);
 
   const handleChange = (e) => {
-    setCredentials({
-      ...credentials,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    setCredentials({ ...credentials, [name]: value });
+    setError("");
   };
 
+<<<<<<< HEAD
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
   };
@@ -186,16 +154,39 @@ const Login = () => {
     }
   };
 
+=======
+  const handleFocus = (field) => {
+    setInputFocus({ ...inputFocus, [field]: true });
+  };
+
+  const handleBlur = (field) => {
+    setInputFocus({ ...inputFocus, [field]: false });
+  };
+
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleRememberMeChange = (e) => {
+    setRememberMe(e.target.checked);
+  };
+
+>>>>>>> 86eca6d (Update user login)
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Basic validation
+    
+    // Form validation
     if (!credentials.email || !credentials.password) {
+<<<<<<< HEAD
       setError("Please enter both email and password.");
+=======
+      setError("Please enter both email and password");
+>>>>>>> 86eca6d (Update user login)
       return;
     }
 
     setLoading(true);
+<<<<<<< HEAD
     setError(null);
 
     try {
@@ -243,9 +234,84 @@ const Login = () => {
           response.data.message ||
           "Login failed. Please check your credentials."
         );
+=======
+    setError("");
+
+    try {
+      // Configure axios with CORS settings
+      const response = await axios.post(
+        "http://localhost:5000/api/users/login",
+        credentials,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          }
+        }
+      );
+
+      // Extract token and user data
+      const token = response.data.token;
+      if (!token) {
+        setError("Server response missing authentication token");
+        setLoading(false);
+        return;
+>>>>>>> 86eca6d (Update user login)
       }
+
+      // User information
+      const userData = {
+        name: response.data.name || "User",
+        email: response.data.email || "",
+        userId: response.data.userId || "",
+        authenticated: true,
+        loginTime: new Date().toISOString()
+      };
+
+      // Store in both session storage and localStorage if rememberMe is checked
+      SessionManager.setToken(token);
+      
+      // Always store token in localStorage to prevent dashboard errors
+      localStorage.setItem("token", token);
+      
+      // Store in both to be safe
+      SessionManager.setItem("userName", userData.name);
+      SessionManager.setItem("userEmail", userData.email);
+      SessionManager.setItem("userId", userData.userId);
+      SessionManager.setItem("loginTime", userData.loginTime);
+      SessionManager.setItem("isAuthenticated", "true");
+      
+      // Store user info in localStorage as well
+      localStorage.setItem("userName", userData.name);
+      localStorage.setItem("userEmail", userData.email);
+      localStorage.setItem("userId", userData.userId);
+      localStorage.setItem("loginTime", userData.loginTime);
+      localStorage.setItem("isAuthenticated", "true");
+      
+      // Configure axios default headers for future requests
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      axios.defaults.headers.common['x-user-token'] = token;
+      
+      setSuccess(true);
+
+      // Log successful authentication
+      console.log("Authentication successful. Token stored and headers configured.");
+
+      // Redirect with a short delay for better UX
+      setTimeout(() => {
+        navigate("/dashboard", {
+          state: {
+            authenticated: true,
+            userName: userData.name,
+            userId: userData.userId,
+            userEmail: userData.email,
+          },
+        });
+      }, 800);
     } catch (err) {
       console.error("Login error:", err);
+<<<<<<< HEAD
 
       // Enhanced error handling
       if (!err.response) {
@@ -334,8 +400,21 @@ const Login = () => {
           err.response?.data?.message ||
           "Invalid email or password. Please try again."
         );
+=======
+      
+      if (err.response) {
+        // Server responded with an error
+        const serverMessage = err.response.data.message || err.response.data.error || err.response.statusText;
+        setError(`Login failed: ${serverMessage}`);
+      } else if (err.request) {
+        // Request was made but no response
+        setError("Server not responding. Please try again later.");
+      } else {
+        // Error in request setup
+        setError(`Login failed: ${err.message}`);
+>>>>>>> 86eca6d (Update user login)
       }
-    } finally {
+      
       setLoading(false);
     }
   };
@@ -443,7 +522,11 @@ const Login = () => {
                   type="checkbox" 
                   id="remember" 
                   checked={rememberMe}
+<<<<<<< HEAD
                   onChange={() => setRememberMe(!rememberMe)}
+=======
+                  onChange={handleRememberMeChange}
+>>>>>>> 86eca6d (Update user login)
                 />
                 <label htmlFor="remember">Remember me</label>
               </div>
@@ -521,4 +604,8 @@ const Login = () => {
   );
 };
 
+<<<<<<< HEAD
 export default Login;
+=======
+export default UserLogin;
+>>>>>>> 86eca6d (Update user login)

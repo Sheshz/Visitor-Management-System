@@ -11,8 +11,8 @@ import {
 } from "chart.js";
 import { Bar, Pie } from "react-chartjs-2";
 import { Users, Mail, Phone, Calendar, Clock, Bell } from "lucide-react";
-import apiClient, { apiHelper } from "../utils/apiClient"; 
-import "../CSS/Overview.css";
+import apiClient, { apiHelper } from "../../utils/apiClient";
+import "../../CSS/Overview.css";
 
 // Development mode flag - set to true to extend session timeouts
 const DEV_MODE = true;
@@ -48,9 +48,17 @@ const UserOverview = () => {
   const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
   const [endpointMap, setEndpointMap] = useState({
     visitors: {
-      current: ["/api/visitors/current", "/api/visitors/active/me", "/api/visitors/me"],
-      active: ["/api/visitors/active", "/api/active-visitors", "/api/visitors/status/active"]
-    }
+      current: [
+        "/api/visitors/current",
+        "/api/visitors/active/me",
+        "/api/visitors/me",
+      ],
+      active: [
+        "/api/visitors/active",
+        "/api/active-visitors",
+        "/api/visitors/status/active",
+      ],
+    },
   });
 
   // Function to check endpoint availability with proper error handling
@@ -69,7 +77,8 @@ const UserOverview = () => {
     if (DEV_MODE) {
       // In dev mode, always refresh token if it's older than 23 hours
       const tokenAge = Date.now() - lastRefreshTime;
-      if (tokenAge > (SESSION_TIMEOUT - 3600000)) { // Refresh 1 hour before expiration
+      if (tokenAge > SESSION_TIMEOUT - 3600000) {
+        // Refresh 1 hour before expiration
         console.log("Dev mode: Preemptively refreshing token");
         const success = await apiHelper.refreshAuthToken();
         if (success) {
@@ -96,9 +105,12 @@ const UserOverview = () => {
   };
 
   // Fetch data from the first available endpoint in a list
-  const fetchFromFirstAvailableEndpoint = async (endpointList, defaultValue = null) => {
+  const fetchFromFirstAvailableEndpoint = async (
+    endpointList,
+    defaultValue = null
+  ) => {
     const workingEndpoint = await findWorkingEndpoint(endpointList);
-    
+
     if (workingEndpoint) {
       try {
         const response = await apiClient.get(workingEndpoint);
@@ -108,7 +120,7 @@ const UserOverview = () => {
         return defaultValue;
       }
     }
-    
+
     console.log(`No available endpoints found in: ${endpointList.join(", ")}`);
     return defaultValue;
   };
@@ -122,7 +134,7 @@ const UserOverview = () => {
 
         // Use apiHelper.fetchWithFallback for better endpoint handling
         const statsData = await apiHelper.fetchWithFallback(
-          "/api/statistics/visitors", 
+          "/api/statistics/visitors",
           {
             totalVisitors: 0,
             todayAppointments: 0,
@@ -132,31 +144,31 @@ const UserOverview = () => {
             visitorTypes: [0, 0, 0, 0],
           }
         );
-        
+
         // For notifications, try multiple known endpoints using the endpoint mapping functionality
         const notificationsData = await apiHelper.handleMissingEndpoint(
-          "/api/notifications/recent", 
+          "/api/notifications/recent",
           []
         );
-        
+
         // Fetch hosts data with fallback
         const hostsData = await apiHelper.fetchWithFallback(
-          "/api/hosts/available", 
+          "/api/hosts/available",
           []
         );
-        
+
         // Fetch recent visitors with fallback
         const recentVisitorsData = await apiHelper.fetchWithFallback(
-          "/api/visitors/recent", 
+          "/api/visitors/recent",
           []
         );
-        
+
         // For current visitor, try multiple known endpoints
         const currentVisitorData = await fetchFromFirstAvailableEndpoint(
           endpointMap.visitors.current,
           null
         );
-        
+
         // For active visitors, try multiple known endpoints
         const activeVisitorsData = await fetchFromFirstAvailableEndpoint(
           endpointMap.visitors.active,
@@ -169,7 +181,6 @@ const UserOverview = () => {
         if (hostsData) setHosts(hostsData);
         if (recentVisitorsData) setRecentVisitors(recentVisitorsData);
         if (currentVisitorData) setVisitorData(currentVisitorData);
-        
       } catch (err) {
         console.error("Error fetching dashboard data:", err.message);
         setError("Failed to load dashboard data. Please try again later.");
@@ -179,18 +190,20 @@ const UserOverview = () => {
     };
 
     // Check authentication with development mode considerations
-    refreshTokenIfNeeded().then(isAuthenticated => {
+    refreshTokenIfNeeded().then((isAuthenticated) => {
       if (isAuthenticated) {
         fetchDashboardData();
       } else {
         // Try to refresh token if not authenticated
-        apiHelper.refreshAuthToken().then(success => {
+        apiHelper.refreshAuthToken().then((success) => {
           if (success) {
             setLastRefreshTime(Date.now());
             fetchDashboardData();
           } else {
             if (DEV_MODE) {
-              console.warn("Dev mode: Authentication failed but proceeding anyway");
+              console.warn(
+                "Dev mode: Authentication failed but proceeding anyway"
+              );
               fetchDashboardData(); // In dev mode, try to fetch data anyway
             } else {
               setError("Authentication required. Please log in again.");
@@ -205,7 +218,7 @@ const UserOverview = () => {
     if (DEV_MODE) {
       const refreshInterval = setInterval(() => {
         console.log("Dev mode: Performing scheduled token refresh");
-        apiHelper.refreshAuthToken().then(success => {
+        apiHelper.refreshAuthToken().then((success) => {
           if (success) {
             setLastRefreshTime(Date.now());
             console.log("Dev mode: Token refreshed successfully");
@@ -221,7 +234,15 @@ const UserOverview = () => {
 
   // Prepare chart data
   const visitorChartData = {
-    labels: visitorStats?.weeklyLabels || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    labels: visitorStats?.weeklyLabels || [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat",
+      "Sun",
+    ],
     datasets: [
       {
         label: "Visitors This Week",
@@ -274,15 +295,21 @@ const UserOverview = () => {
   useEffect(() => {
     const handleSessionExpired = () => {
       if (DEV_MODE) {
-        console.warn("Dev mode: Session expired event received, attempting to refresh token");
+        console.warn(
+          "Dev mode: Session expired event received, attempting to refresh token"
+        );
         // In dev mode, try to refresh the token instead of showing error
-        apiHelper.refreshAuthToken().then(success => {
+        apiHelper.refreshAuthToken().then((success) => {
           if (success) {
             setLastRefreshTime(Date.now());
             console.log("Dev mode: Token refreshed after session expiry");
           } else {
-            console.error("Dev mode: Failed to refresh token after session expiry");
-            setError("Your session has expired. Please log in again. (Dev mode active)");
+            console.error(
+              "Dev mode: Failed to refresh token after session expiry"
+            );
+            setError(
+              "Your session has expired. Please log in again. (Dev mode active)"
+            );
           }
         });
       } else {
@@ -292,7 +319,7 @@ const UserOverview = () => {
     };
 
     window.addEventListener("user:expired", handleSessionExpired);
-    
+
     return () => {
       window.removeEventListener("user:expired", handleSessionExpired);
     };
@@ -301,20 +328,23 @@ const UserOverview = () => {
   // Show development mode indicator when active
   const DevModeIndicator = () => {
     if (!DEV_MODE) return null;
-    
+
     return (
-      <div style={{ 
-        position: 'fixed', 
-        bottom: '10px', 
-        right: '10px', 
-        backgroundColor: 'rgba(255, 0, 0, 0.7)', 
-        color: 'white',
-        padding: '5px 10px',
-        borderRadius: '5px',
-        fontSize: '12px',
-        zIndex: 1000
-      }}>
-        DEV MODE ACTIVE - Extended Session ({Math.floor(SESSION_TIMEOUT / 3600000)}h)
+      <div
+        style={{
+          position: "fixed",
+          bottom: "10px",
+          right: "10px",
+          backgroundColor: "rgba(255, 0, 0, 0.7)",
+          color: "white",
+          padding: "5px 10px",
+          borderRadius: "5px",
+          fontSize: "12px",
+          zIndex: 1000,
+        }}
+      >
+        DEV MODE ACTIVE - Extended Session (
+        {Math.floor(SESSION_TIMEOUT / 3600000)}h)
       </div>
     );
   };
@@ -340,7 +370,7 @@ const UserOverview = () => {
   return (
     <div className="overview-container">
       {DEV_MODE && <DevModeIndicator />}
-      
+
       {visitorData && (
         <div className="visitor-card">
           <div className="visitor-header">
@@ -492,11 +522,14 @@ const UserOverview = () => {
           <div className="notifications-list">
             {notifications && notifications.length > 0 ? (
               notifications.map((notification, index) => (
-                <div key={notification._id || index} className="notification-item">
+                <div
+                  key={notification._id || index}
+                  className="notification-item"
+                >
                   <p>{notification.message || "No message"}</p>
                   <small>
-                    {notification.timestamp 
-                      ? new Date(notification.timestamp).toLocaleString() 
+                    {notification.timestamp
+                      ? new Date(notification.timestamp).toLocaleString()
                       : "No timestamp"}
                   </small>
                 </div>

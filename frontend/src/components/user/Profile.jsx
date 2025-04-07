@@ -13,11 +13,11 @@ import {
   User,
   Clock,
   Database,
-  Camera // Added Camera icon for face unlock
+  Camera, // Added Camera icon for face unlock
 } from "lucide-react";
-import ProfileIcon from "../components/ProfileIcon";
-import generateColorFromEmail from "../utils/generateColor";
-import "../CSS/Profile.css";
+import ProfileIcon from "../../components/ProfileIcon";
+import generateColorFromEmail from "../../utils/generateColor";
+import "../../CSS/Profile.css";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -247,7 +247,9 @@ const Profile = () => {
 
   const handleExportData = () => {
     // In a real app, this would trigger a data export
-    showNotification("Your data is being exported. You'll receive it by email soon!");
+    showNotification(
+      "Your data is being exported. You'll receive it by email soon!"
+    );
   };
 
   // Face unlock functions
@@ -548,7 +550,7 @@ const Profile = () => {
           {activeTab === "settings" && (
             <div className="settings-section">
               <h1 className="account-settings-title">Account Settings</h1>
-              
+
               {/* New Face Unlock Section */}
               <div className="settings-card">
                 <div className="settings-card-header">
@@ -557,15 +559,22 @@ const Profile = () => {
                   </div>
                   <div className="settings-card-title">
                     <h2>Face Unlock</h2>
-                    <p>Enable Face ID to securely sign in to your account without a password.</p>
+                    <p>
+                      Enable Face ID to securely sign in to your account without
+                      a password.
+                    </p>
                   </div>
                 </div>
                 <div className="settings-card-actions single-action">
-                  <button 
-                    className={faceUnlockEnabled ? "disable-button" : "enable-button"} 
+                  <button
+                    className={
+                      faceUnlockEnabled ? "disable-button" : "enable-button"
+                    }
                     onClick={toggleFaceUnlock}
                   >
-                    {faceUnlockEnabled ? "Disable Face Unlock" : "Enable Face Unlock"}
+                    {faceUnlockEnabled
+                      ? "Disable Face Unlock"
+                      : "Enable Face Unlock"}
                   </button>
                 </div>
 
@@ -585,7 +594,8 @@ const Profile = () => {
                           )}
                         </div>
                         <p className="face-setup-instructions">
-                          Position your face in the frame and click "Capture" to scan your face.
+                          Position your face in the frame and click "Capture" to
+                          scan your face.
                         </p>
                         <div className="face-setup-actions">
                           <button
@@ -613,7 +623,9 @@ const Profile = () => {
                           <p>Your face has been successfully captured</p>
                         </div>
                         <p className="face-setup-instructions">
-                          You can now use Face ID to sign in to your account. For best results, set up Face ID in good lighting conditions.
+                          You can now use Face ID to sign in to your account.
+                          For best results, set up Face ID in good lighting
+                          conditions.
                         </p>
                         <div className="face-setup-actions">
                           <button
@@ -634,7 +646,7 @@ const Profile = () => {
                   </div>
                 )}
               </div>
-              
+
               {/* Search History Section - Updated to match the design */}
               <div className="settings-card">
                 <div className="settings-card-header">
@@ -643,18 +655,20 @@ const Profile = () => {
                   </div>
                   <div className="settings-card-title">
                     <h2>Search History</h2>
-                    <p>View and manage your search history within the system.</p>
+                    <p>
+                      View and manage your search history within the system.
+                    </p>
                   </div>
                 </div>
                 <div className="settings-card-actions">
-                  <button 
-                    className="view-button" 
+                  <button
+                    className="view-button"
                     onClick={() => setViewSearchHistory(!viewSearchHistory)}
                   >
                     View Search History
                   </button>
-                  <button 
-                    className="clear-button" 
+                  <button
+                    className="clear-button"
                     onClick={handleClearHistory}
                     disabled={searchHistory.length === 0}
                   >
@@ -724,14 +738,13 @@ const Profile = () => {
                   </div>
                   <div className="settings-card-title">
                     <h2>Data Management</h2>
-                    <p>Manage or export your personal data stored in our system.</p>
+                    <p>
+                      Manage or export your personal data stored in our system.
+                    </p>
                   </div>
                 </div>
                 <div className="settings-card-actions single-action">
-                  <button 
-                    className="export-button" 
-                    onClick={handleExportData}
-                  >
+                  <button className="export-button" onClick={handleExportData}>
                     Export Data
                   </button>
                 </div>

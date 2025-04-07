@@ -15,35 +15,21 @@ import {
   HelpCircle,
   Settings,
   ChevronDown,
-  Users
+  Users,
 } from "lucide-react";
 import "../CSS/UserDashboard.css";
-import Profile from "./Profile";
-import UserOverview from "./UserOverview";
-import CreateHostProfile from "./hosts/CreateHostProfile";
-import Notifications from "./Notifications";
+import Profile from "./user/Profile";
+import UserOverview from "./user/UserOverview";
+import CreateHostProfile from "./hosts/HostProfileCreation";
+import Notifications from "./user/Notifications";
 import generateColorFromEmail from "../utils/generateColor";
 import useUserData from "../hooks/useUserData";
 import MyVisitation from "../components/user/MyVisitation";
-import AppointmentConfirmation from "./Appointment";
+import AppointmentConfirmation from "./user/Appointment";
 import HostDirectory from "./hosts/HostDirectory";
 
-// Create a session storage manager to isolate sessions per tab
-const SessionManager = {
-  // Use sessionStorage instead of localStorage for tab-specific storage
-  setItem: (key, value) => {
-    sessionStorage.setItem(key, value);
-  },
-  getItem: (key) => {
-    return sessionStorage.getItem(key);
-  },
-  removeItem: (key) => {
-    sessionStorage.removeItem(key);
-  },
-  clear: () => {
-    sessionStorage.clear();
-  }
-};
+// Import the enhanced SessionManager
+import { SessionManager } from "../utils/SessionManager";
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -53,41 +39,47 @@ const UserDashboard = () => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileDropdownRef = useRef(null);
 
-  // Check if token exists and redirect if not - use sessionStorage instead
+  // Check if token exists and redirect if not - use enhanced SessionManager
   useEffect(() => {
-    const token = SessionManager.getItem("token");
-    if (!token) {
-      // Transfer token from localStorage to sessionStorage on initial load if available
-      const localToken = localStorage.getItem("token");
-      if (localToken) {
-        SessionManager.setItem("token", localToken);
-        // Remove from localStorage to prevent cross-tab synchronization
-        localStorage.removeItem("token");
-      } else {
-        navigate("/login");
-        return;
-      }
+    // Check if already authenticated with valid token
+    if (SessionManager.isAuthenticated()) {
+      // User is authenticated, refresh token expiration to extend session
+      SessionManager.refreshTokenExpiration();
+      return; // Exit early
     }
-  }, [navigate]);
+    
+    // Try to transfer from localStorage if needed
+    const transferred = SessionManager.transferFromLocalStorage();
+    if (!transferred) {
+      // No valid token anywhere, redirect to login
+      navigate("/login", { replace: true });
+    }
+  }, []); // No dependencies to avoid infinite loops
 
   // Modify useUserData hook to use sessionStorage token (assuming you can modify the hook)
   // If you can't modify the hook, you may need to pass the token as a prop
-  const { userData, notifications, loading, error, refreshData } = useUserData();
+  const { userData, notifications, loading, error, refreshData } =
+    useUserData();
 
   // Generate profile color based on user email when available
-  const profileColor = userData?.email ? generateColorFromEmail(userData.email) : "#4A5568";
+  const profileColor = userData?.email
+    ? generateColorFromEmail(userData.email)
+    : "#4A5568";
 
   // Check for new notifications whenever notifications array changes
   useEffect(() => {
     if (notifications && notifications.length > 0) {
-      setHasNewNotifications(notifications.some(notif => !notif.read));
+      setHasNewNotifications(notifications.some((notif) => !notif.read));
     }
   }, [notifications]);
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
-      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target)
+      ) {
         setShowProfileDropdown(false);
       }
     }
@@ -102,16 +94,19 @@ const UserDashboard = () => {
     if (userData) {
       // Store the full name
       if (userData.firstName && userData.lastName) {
-        SessionManager.setItem("userName", `${userData.firstName} ${userData.lastName}`);
+        SessionManager.setItem(
+          "userName",
+          `${userData.firstName} ${userData.lastName}`
+        );
       } else if (userData.name) {
         SessionManager.setItem("userName", userData.name);
       }
-      
+
       // Store email if available
       if (userData.email) {
         SessionManager.setItem("userEmail", userData.email);
       }
-      
+
       // Store username if available
       if (userData.username) {
         SessionManager.setItem("username", userData.username);
@@ -123,15 +118,15 @@ const UserDashboard = () => {
   useEffect(() => {
     const handleStorageChange = (event) => {
       // If localStorage token changes in another tab, don't let it affect this tab
-      if (event.key === 'token' && event.storageArea === localStorage) {
+      if (event.key === "token" && event.storageArea === localStorage) {
         // Keep using this tab's session token
         event.stopPropagation();
       }
     };
-    
-    window.addEventListener('storage', handleStorageChange);
+
+    window.addEventListener("storage", handleStorageChange);
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener("storage", handleStorageChange);
     };
   }, []);
 
@@ -156,7 +151,9 @@ const UserDashboard = () => {
     if (!userData || !userData.firstName) {
       return userData?.name?.charAt(0) || "U";
     }
-    return `${userData.firstName.charAt(0)}${userData.lastName ? userData.lastName.charAt(0) : ''}`;
+    return `${userData.firstName.charAt(0)}${
+      userData.lastName ? userData.lastName.charAt(0) : ""
+    }`;
   };
 
   // Handle notification icon click
@@ -165,11 +162,13 @@ const UserDashboard = () => {
     setHasNewNotifications(false);
   };
 
-  // Handle logout - use SessionManager
+  // Handle logout - use enhanced SessionManager
   const handleLogout = () => {
-    // Clear only sessionStorage
+    // Clear sessionStorage
     SessionManager.clear();
-    // Dispatch a custom event that SessionManager is listening for
+    // Also clear localStorage token if it exists
+    localStorage.removeItem("token");
+    // Dispatch a custom event if needed
     window.dispatchEvent(new Event("user:logout"));
     // Redirect to login page
     navigate("/login");
@@ -181,21 +180,26 @@ const UserDashboard = () => {
   };
 
   if (loading) return <div className="loading">Loading dashboard...</div>;
-  
+
   if (error) {
     return (
       <div className="error-container">
         <div className="error-message">Error: {error}</div>
-        <button onClick={handleRetry} className="retry-button">Retry</button>
-        <button onClick={handleLogout} className="logout-button">Go to Login</button>
+        <button onClick={handleRetry} className="retry-button">
+          Retry
+        </button>
+        <button onClick={handleLogout} className="logout-button">
+          Go to Login
+        </button>
       </div>
     );
   }
 
   // Get display name for user
-  const displayName = userData?.firstName && userData?.lastName 
-    ? `${userData.firstName} ${userData.lastName}`
-    : userData?.name || "User";
+  const displayName =
+    userData?.firstName && userData?.lastName
+      ? `${userData.firstName} ${userData.lastName}`
+      : userData?.name || "User";
 
   return (
     <div className="dashboard-container">
@@ -204,7 +208,7 @@ const UserDashboard = () => {
         <div className="logo-container">
           <div className="logo-wrapper">
             <div className="logo">GP</div>
-            {!collapsed && <span className="logo-text">GetePass Pro</span>}
+            {!collapsed && <span className="logo-text">GetPass Pro</span>}
           </div>
           {!collapsed && (
             <button onClick={toggleSidebar} className="collapse-btn">
@@ -230,9 +234,13 @@ const UserDashboard = () => {
                   setActiveMenu(item.name);
                 }
               }}
-              className={`menu-item ${activeMenu === item.name ? "active" : ""}`}
+              className={`menu-item ${
+                activeMenu === item.name ? "active" : ""
+              }`}
             >
-              <div className={collapsed ? "icon-centered" : "icon"}>{item.icon}</div>
+              <div className={collapsed ? "icon-centered" : "icon"}>
+                {item.icon}
+              </div>
               {!collapsed && <span className="menu-text">{item.name}</span>}
             </div>
           ))}
@@ -245,7 +253,10 @@ const UserDashboard = () => {
         <div className="header">
           <h1 className="header-title">User VMS Dashboard</h1>
           <div className="user-section">
-            <div className="notification-icon" onClick={handleNotificationClick}>
+            <div
+              className="notification-icon"
+              onClick={handleNotificationClick}
+            >
               <Mail size={18} className="mail-icon" />
               {hasNewNotifications && <div className="notification-dot"></div>}
             </div>
@@ -256,7 +267,10 @@ const UserDashboard = () => {
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                 ref={profileDropdownRef}
               >
-                <div className="avatar" style={{ backgroundColor: profileColor }}>
+                <div
+                  className="avatar"
+                  style={{ backgroundColor: profileColor }}
+                >
                   {userData.profileImage ? (
                     <img src={userData.profileImage} alt="Profile" />
                   ) : (
@@ -266,13 +280,18 @@ const UserDashboard = () => {
                 <div className="user-info">
                   <div className="user-name">{displayName}</div>
                   <div className="user-role">
-                    {userData.role === "user" ? "Standard account" : userData.role || "User"}
+                    {userData.role === "user"
+                      ? "Standard account"
+                      : userData.role || "User"}
                   </div>
                 </div>
                 <ChevronDown size={14} color="#718096" />
                 {showProfileDropdown && (
                   <div className="profile-dropdown show">
-                    <div className="dropdown-item" onClick={() => setActiveMenu("Profile")}>
+                    <div
+                      className="dropdown-item"
+                      onClick={() => setActiveMenu("Profile")}
+                    >
                       <User size={16} />
                       <span>Profile</span>
                     </div>
@@ -290,7 +309,10 @@ const UserDashboard = () => {
                       <HelpCircle size={16} />
                       <span>Support</span>
                     </div>
-                    <div className="dropdown-item logout" onClick={handleLogout}>
+                    <div
+                      className="dropdown-item logout"
+                      onClick={handleLogout}
+                    >
                       <LogOut size={16} />
                       <span>Logout</span>
                     </div>
@@ -307,10 +329,12 @@ const UserDashboard = () => {
           {activeMenu === "Overview" && <UserOverview />}
           {activeMenu === "Profile" && <Profile />}
           {activeMenu === "Become a Host" && <CreateHostProfile />}
-          {activeMenu === "Notifications" && <Notifications notifications={notifications} />}
+          {activeMenu === "Notifications" && (
+            <Notifications notifications={notifications} />
+          )}
           {activeMenu === "My Visitation" && <MyVisitation />}
-          {activeMenu === "Appointment"&& <AppointmentConfirmation/>}
-          {activeMenu === "Host Directory" && <HostDirectory/>}
+          {activeMenu === "Appointment" && <AppointmentConfirmation />}
+          {activeMenu === "Host Directory" && <HostDirectory />}
           {/* Add other menu components as needed */}
         </div>
       </div>

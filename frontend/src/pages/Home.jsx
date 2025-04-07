@@ -489,7 +489,7 @@ const HomePage = () => {
             Create Account
           </a>
 
-          <a href="/hostlogin" style={styles.tertiaryButton}>
+          <a href="/host-login" style={styles.tertiaryButton}>
             Expert Portal
           </a>
         </div>

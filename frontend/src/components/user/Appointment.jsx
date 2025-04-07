@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, ChevronRight, Search, Filter } from 'lucide-react';
-import '../CSS/Appointment.css';
+import '../../CSS/Appointment.css';
 
 
 const Appointment = () => {
