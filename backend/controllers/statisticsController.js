@@ -21,12 +21,12 @@ exports.getVisitorStatistics = async (req, res) => {
         $gte: today.toDate(),
         $lt: moment(today).endOf('day').toDate()
       },
-      status: 'Scheduled'
+      status: 'scheduled'  // Make sure this matches your enum values in Visitor model
     });
     
     // Get currently checked in visitors
     const checkedIn = await Visitor.countDocuments({
-      status: 'Checked In',
+      status: 'checked-in',  // Make sure this matches your enum values in Visitor model
       checkOutTime: null
     });
     
@@ -75,21 +75,21 @@ exports.getVisitorStatistics = async (req, res) => {
       }
     ]);
     
-    // Format visitor type data
-    const visitorTypes = [0, 0, 0, 0]; // [Appointments, Walk-ins, Deliveries, Interviews]
+    // Format visitor type data based on your Visitor model's enum values
+    const visitorTypes = [0, 0, 0, 0]; // [scheduled, walk-in, event, vendor]
     
     visitorTypeData.forEach(type => {
       switch(type._id) {
-        case 'Appointment':
+        case 'scheduled':
           visitorTypes[0] = type.count;
           break;
-        case 'Walk-in':
+        case 'walk-in':
           visitorTypes[1] = type.count;
           break;
-        case 'Delivery':
+        case 'event':
           visitorTypes[2] = type.count;
           break;
-        case 'Interview':
+        case 'vendor':
           visitorTypes[3] = type.count;
           break;
       }

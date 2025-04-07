@@ -1,12 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const statisticsController = require('../controllers/statisticsController');
-const { verifyToken } = require('../middleware/userMiddleware');
+const { auth } = require('../middleware/userMiddleware');
 
-// All routes are protected with authentication
-router.use(verifyToken);
+// The error is happening because 'verifyToken' doesn't exist in your middleware
+// Let's replace with the 'auth' middleware that does exist
 
-// Get visitor statistics
-router.get('/visitors', statisticsController.getVisitorStatistics);
+// Instead of:
+// router.use(verifyToken);
+
+// Use this approach instead (individual routes with middleware):
+router.get('/visitors', auth, statisticsController.getVisitorStatistics);
+
+// Add any other statistics routes with the auth middleware
+// router.get('/dashboard', auth, statisticsController.getDashboardStats);
+// router.get('/other-stats', auth, statisticsController.getOtherStats);
 
 module.exports = router;

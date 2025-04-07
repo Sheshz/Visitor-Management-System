@@ -55,10 +55,6 @@ const hostSchema = new mongoose.Schema({
     linkedin: { type: String, default: "" },
     instagram: { type: String, default: "" }
   },
-  isApproved: {
-    type: Boolean,
-    default: false
-  },
   isActive: {
     type: Boolean,
     default: true

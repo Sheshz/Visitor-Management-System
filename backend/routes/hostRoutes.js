@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { verifyHostToken, auth } = require("../middleware/userMiddleware");
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, "../public/uploads");
@@ -36,50 +37,7 @@ const upload = multer({
 });
 
 // Import controllers
-const {
-  createHostProfile,
-  getHostProfile,
-  getAvailableHosts,
-  updateHostProfile,
-  getHostById
-} = require("../controllers/hostController");
-
-// JWT Secret from config
-const config = require("../config/default");
-const jwt = require("jsonwebtoken");
-
-// Authentication middleware - FIXED
-const auth = (req, res, next) => {
-  try {
-    // Get token from header
-    const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
-    
-    if (!token) {
-      return res.status(401).json({ message: "No token, authorization denied" });
-    }
-    
-    // Verify token
-    const decoded = jwt.verify(token, config.jwtSecret);
-    
-    // Set user in request (using id instead of userId)
-    req.user = {
-      id: decoded.id || decoded.userId // Handle both formats for compatibility
-    };
-    
-    next();
-  } catch (error) {
-    console.error("Auth middleware error:", error);
-    
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({ message: "Token has expired" });
-    }
-    
-    return res.status(401).json({ message: "Authentication failed", error: error.message });
-  }
-};
-
-// This middleware is identical to auth for now, but kept separate for clarity
-const verifyToken = auth;
+const hostController = require("../controllers/hostController");
 
 // Error handling middleware for multer
 const handleMulterError = (err, req, res, next) => {
@@ -102,18 +60,22 @@ router.post(
   auth, 
   upload.single("avatar"),
   handleMulterError,
-  createHostProfile
+  hostController.createHostProfile
 );
 
-router.get("/me", verifyToken, getHostProfile);
-router.get("/available", getAvailableHosts);
-router.get("/:hostId", getHostById);
+router.get("/me", verifyHostToken, hostController.getHostProfile);
+router.get("/available", hostController.getAvailableHosts);
+router.get("/:hostId", hostController.getHostById);
 router.put(
   "/update", 
-  verifyToken, 
+  verifyHostToken, 
   upload.single("avatar"), 
   handleMulterError,
-  updateHostProfile
+  hostController.updateHostProfile
 );
+
+// Add both login routes to match both potential endpoints
+router.post("/login", hostController.loginHost);
+router.post("/loginHost", hostController.loginHost); // Add this line to fix the route issue
 
 module.exports = router;

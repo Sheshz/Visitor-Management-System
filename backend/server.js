@@ -31,8 +31,18 @@ const server = http.createServer(app);
 // Initialize Socket.io
 //const io = socketIo(server, { cors: { origin: "*" } });
 
+// Configure CORS - Add this before other middleware
+app.use(cors({
+  origin: 'http://localhost:5173', // Your React app's URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true // Enable credentials (cookies, authorization headers, etc.)
+}));
+
+// Add OPTIONS handling for preflight requests
+app.options('*', cors());
+
 // Middleware setup
-app.use(cors()); // Enable CORS
 app.use(express.json()); // Parse JSON requests
 app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded requests
 app.use(express.urlencoded({ extended: true }));
@@ -45,7 +55,7 @@ app.use("/api/visitors", visitorRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use("/api/statistics", statisticsRoutes);
-app.use("/api/host", hostRoutes);
+app.use("/api/hosts", hostRoutes); // Changed from "/api/host" to "/api/hosts" to match your error message
 
 app.get("/api/public", (req, res) => {
   res.send("This is a public route!");
@@ -74,6 +84,7 @@ app.use((err, req, res, next) => {
 // Start the server
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`CORS enabled for origin: http://localhost:5173`);
 });
 
 // Handle unhandled promise rejections

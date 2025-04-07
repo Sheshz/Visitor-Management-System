@@ -3,6 +3,63 @@ const User = require("../models/User");
 const { sendHostProfileEmail } = require("../utils/emailService");
 const fs = require("fs");
 const path = require("path");
+const jwt = require("jsonwebtoken");
+const config = require("../config/default");
+
+// Host login functionality
+const loginHost = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ message: "Please provide email and password" });
+    }
+
+    // Find host by email
+    const host = await Host.findOne({ email });
+    if (!host) {
+      return res.status(404).json({ message: "Host not found. Invalid credentials." });
+    }
+
+    // Direct password comparison (keeping original approach)
+    if (host.password !== password) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Only check if host is active, remove the isApproved check
+    if (!host.isActive) {
+      return res.status(403).json({ message: "Your host account is currently inactive" });
+    }
+
+    // Create payload for JWT
+    const payload = {
+      id: host.user,
+      hostId: host.hostID,
+      email: host.email,
+      isHost: true
+    };
+
+    // Sign JWT token
+    jwt.sign(
+      payload,
+      config.jwtSecret,
+      { expiresIn: "24h" },
+      (err, token) => {
+        if (err) throw err;
+        res.json({
+          success: true,
+          token,
+          hostId: host.hostID,
+          name: host.name
+        });
+      }
+    );
+  } catch (error) {
+    console.error("Error in host login:", error);
+    res.status(500).json({ message: "Server error during login" });
+  }
+};
 
 // Create a new host profile
 const createHostProfile = async (req, res) => {
@@ -24,7 +81,7 @@ const createHostProfile = async (req, res) => {
         .json({ message: "Host profile already exists for this user" });
     }
 
-    // Store password directly as provided
+    // Store password directly as provided (keeping original approach)
     const password = req.body.password || "";
 
     // Handle avatar file if uploaded
@@ -51,6 +108,7 @@ const createHostProfile = async (req, res) => {
         instagram: req.body.instagram || "",
       },
       avatar: avatarPath,
+      isApproved: true, // Auto-approve hosts
     });
 
     // Save the new host profile
@@ -82,7 +140,7 @@ const createHostProfile = async (req, res) => {
   }
 };
 
-// Fetch the current user's host profile
+// Other methods remain the same
 const getHostProfile = async (req, res) => {
   try {
     // Check if user ID exists
@@ -105,10 +163,10 @@ const getHostProfile = async (req, res) => {
   }
 };
 
-// Get all available hosts (for public viewing)
 const getAvailableHosts = async (req, res) => {
   try {
-    const hosts = await Host.find({ isActive: true, isApproved: true })
+    // Modified to only check isActive since all hosts are now auto-approved
+    const hosts = await Host.find({ isActive: true })
       .select("-password -user -__v")
       .sort({ createdAt: -1 });
 
@@ -119,7 +177,6 @@ const getAvailableHosts = async (req, res) => {
   }
 };
 
-// Update host profile
 const updateHostProfile = async (req, res) => {
   try {
     // Check if user ID exists
@@ -152,7 +209,7 @@ const updateHostProfile = async (req, res) => {
       },
     };
 
-    // Store password directly if provided
+    // Store password directly if provided (keeping original approach)
     if (req.body.password) {
       updateData.password = req.body.password;
     }
@@ -189,7 +246,6 @@ const updateHostProfile = async (req, res) => {
   }
 };
 
-// Get host by ID
 const getHostById = async (req, res) => {
   try {
     const host = await Host.findOne({ hostID: req.params.hostId })
@@ -208,6 +264,7 @@ const getHostById = async (req, res) => {
 };
 
 module.exports = {
+  loginHost,
   createHostProfile,
   getHostProfile,
   getAvailableHosts,
