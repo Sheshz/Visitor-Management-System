@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import apiClient, {
   apiHelper,
   API_URL,
@@ -7,6 +7,17 @@ import apiClient, {
   storeTokens,
 } from "../../utils/apiClient";
 import "../../CSS/Login.css";
+import {
+  FiMail,
+  FiLock,
+  FiEye,
+  FiEyeOff,
+  FiShield,
+  FiRefreshCw,
+  FiAlertTriangle,
+  FiKey,
+  FiHome,
+} from "react-icons/fi";
 
 const Login = () => {
   const [credentials, setCredentials] = useState({
@@ -18,6 +29,13 @@ const Login = () => {
   const [serverTesting, setServerTesting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [serverStatus, setServerStatus] = useState("checking"); // "checking", "online", "offline"
+  const [showPassword, setShowPassword] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
+  const [inputFocus, setInputFocus] = useState({
+    email: false,
+    password: false,
+  });
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -101,6 +119,24 @@ const Login = () => {
     });
   };
 
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleFocus = (field) => {
+    setInputFocus(prev => ({
+      ...prev,
+      [field]: true
+    }));
+  };
+
+  const handleBlur = (field) => {
+    setInputFocus(prev => ({
+      ...prev,
+      [field]: false
+    }));
+  };
+
   const testServerConnection = async () => {
     setServerTesting(true);
     setMessage({ type: "info", text: "Testing server connection..." });
@@ -150,20 +186,17 @@ const Login = () => {
     }
   };
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Basic validation
     if (!credentials.email || !credentials.password) {
-      setMessage({
-        type: "error",
-        text: "Please enter both email and password.",
-      });
+      setError("Please enter both email and password.");
       return;
     }
 
     setLoading(true);
-    setMessage({ type: "info", text: "Attempting to log in..." });
+    setError(null);
 
     try {
       console.log("Attempting login with:", credentials.email);
@@ -185,10 +218,7 @@ const Login = () => {
           localStorage.removeItem("rememberedEmail");
         }
 
-        setMessage({
-          type: "success",
-          text: "Login successful! Redirecting...",
-        });
+        setSuccess(true);
 
         // Check if there's a saved redirect path
         const redirectPath = sessionStorage.getItem("redirectAfterLogin");
@@ -209,28 +239,20 @@ const Login = () => {
           }
         }, 1000);
       } else {
-        setMessage({
-          type: "error",
-          text:
-            response.data.message ||
-            "Login failed. Please check your credentials.",
-        });
+        setError(
+          response.data.message ||
+          "Login failed. Please check your credentials."
+        );
       }
     } catch (err) {
       console.error("Login error:", err);
 
       // Enhanced error handling
       if (!err.response) {
-        setMessage({
-          type: "error",
-          text: "Network error: Cannot connect to the server. Please check your internet connection and ensure the server is running.",
-        });
+        setError("Network error: Cannot connect to the server. Please check your internet connection and ensure the server is running.");
         setServerStatus("offline");
       } else if (err.response.status === 404) {
-        setMessage({
-          type: "error",
-          text: "The login service could not be found. The system will try alternative endpoints automatically.",
-        });
+        setError("The login service could not be found. The system will try alternative endpoints automatically.");
 
         // Try to find alternative endpoints
         try {
@@ -275,10 +297,7 @@ const Login = () => {
                   localStorage.setItem("rememberedEmail", credentials.email);
                 }
 
-                setMessage({
-                  type: "success",
-                  text: "Login successful! Redirecting...",
-                });
+                setSuccess(true);
 
                 setTimeout(() => {
                   const redirectPath =
@@ -306,23 +325,15 @@ const Login = () => {
           }
 
           // If we get here, all alternatives failed
-          setMessage({
-            type: "error",
-            text: "Could not find a working login endpoint. Please contact your system administrator.",
-          });
+          setError("Could not find a working login endpoint. Please contact your system administrator.");
         } catch (altAttemptErr) {
-          setMessage({
-            type: "error",
-            text: "Failed to try alternative login methods. Please try again later.",
-          });
+          setError("Failed to try alternative login methods. Please try again later.");
         }
       } else {
-        setMessage({
-          type: "error",
-          text:
-            err.response?.data?.message ||
-            "Invalid email or password. Please try again.",
-        });
+        setError(
+          err.response?.data?.message ||
+          "Invalid email or password. Please try again."
+        );
       }
     } finally {
       setLoading(false);
@@ -330,411 +341,181 @@ const Login = () => {
   };
 
   return (
-    <div
-      className="login-container"
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "100vh",
-        background: "linear-gradient(to right, #3b82f6, #8b5cf6)",
-        padding: "3rem 1rem",
-      }}
-    >
-      <div
-        className="login-form-wrapper"
-        style={{
-          backgroundColor: "white",
-          padding: "2rem",
-          borderRadius: "0.5rem",
-          boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)",
-          width: "100%",
-          maxWidth: "24rem",
-          transition: "transform 0.3s ease",
-        }}
-      >
-        <h2
-          style={{
-            fontSize: "1.875rem",
-            fontWeight: "bold",
-            textAlign: "center",
-            color: "#1f2937",
-            marginBottom: "1.5rem",
-          }}
-        >
-          Sign In
-        </h2>
-        <p
-          style={{
-            textAlign: "center",
-            color: "#4b5563",
-            marginBottom: "1rem",
-          }}
-        >
-          Please enter your credentials
-        </p>
+    <div className="userlogin-container">
+      {/* Added additional Back to Home button for better visibility */}
+      <div className="userlogin-top-home-button">
+        <Link to="/" className="userlogin-back-home">
+          <FiHome className="userlogin-home-icon" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
 
-        {/* Server status indicator */}
-        {serverStatus === "offline" && (
-          <div
-            style={{
-              padding: "0.75rem",
-              borderRadius: "0.375rem",
-              marginBottom: "1rem",
-              backgroundColor: "#FEE2E2",
-              color: "#B91C1C",
-              fontSize: "0.875rem",
-            }}
-          >
-            ⚠️ Server connection error. Please make sure the backend server is
-            running.
-            <button
-              type="button"
-              onClick={testServerConnection}
-              disabled={serverTesting}
-              style={{
-                display: "block",
-                width: "100%",
-                marginTop: "0.5rem",
-                padding: "0.375rem",
-                fontSize: "0.75rem",
-                backgroundColor: "#DC2626",
-                color: "white",
-                border: "none",
-                borderRadius: "0.25rem",
-                cursor: serverTesting ? "default" : "pointer",
-              }}
-            >
-              {serverTesting ? "Testing..." : "Test Connection"}
-            </button>
-          </div>
-        )}
-
-        {/* Display message notifications */}
-        {message && (
-          <div
-            style={{
-              padding: "0.75rem",
-              borderRadius: "0.375rem",
-              marginBottom: "1rem",
-              backgroundColor:
-                message.type === "warning"
-                  ? "#FEF3C7"
-                  : message.type === "error"
-                  ? "#FEE2E2"
-                  : message.type === "success"
-                  ? "#D1FAE5"
-                  : message.type === "info"
-                  ? "#E0F2FE"
-                  : "#E0F2FE",
-              color:
-                message.type === "warning"
-                  ? "#92400E"
-                  : message.type === "error"
-                  ? "#B91C1C"
-                  : message.type === "success"
-                  ? "#065F46"
-                  : message.type === "info"
-                  ? "#1E40AF"
-                  : "#1E40AF",
-              fontSize: "0.875rem",
-            }}
-          >
-            {message.text}
-          </div>
-        )}
-
-        <form
-          onSubmit={handleLogin}
-          style={{ marginTop: "1.5rem" }}
-          className="login-form"
-        >
-          <div style={{ marginBottom: "1.5rem" }} className="form-group">
-            <label
-              htmlFor="email"
-              style={{
-                display: "block",
-                fontSize: "0.875rem",
-                fontWeight: "500",
-                color: "#374151",
-                marginBottom: "0.5rem",
-              }}
-            >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={credentials.email}
-              onChange={handleChange}
-              required
-              autoComplete="email"
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "0.625rem 1rem",
-                border: "1px solid #d1d5db",
-                borderRadius: "0.375rem",
-                outline: "none",
-                transition: "all 0.3s ease-in-out",
-                fontSize: "1rem",
-                marginTop: "0.5rem",
-              }}
-              onFocus={(e) => {
-                e.target.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.3)";
-                e.target.style.borderColor = "#3b82f6";
-              }}
-              onBlur={(e) => {
-                e.target.style.boxShadow = "none";
-              }}
-            />
+      <div className="userlogin-wrapper">
+        <div className="userlogin-card">
+          <div className="userlogin-header">
+            <div className="userlogin-logo-container">
+              <div className="userlogin-logo-box">
+                <div className="userlogin-gp-text">GP</div>
+              </div>
+              <span className="userlogin-logo-text">GetPass Pro</span>
+            </div>
+            <h1>Welcome Back</h1>
+            <p>Enter your credentials to access your secure vault</p>
           </div>
 
-          <div style={{ marginBottom: "1.5rem" }} className="form-group">
-            <label
-              htmlFor="password"
-              style={{
-                display: "block",
-                fontSize: "0.875rem",
-                fontWeight: "500",
-                color: "#374151",
-                marginBottom: "0.5rem",
-              }}
-            >
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={credentials.password}
-              onChange={handleChange}
-              required
-              autoComplete="current-password"
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "0.625rem 1rem",
-                border: "1px solid #d1d5db",
-                borderRadius: "0.375rem",
-                outline: "none",
-                transition: "all 0.3s ease-in-out",
-                fontSize: "1rem",
-                marginTop: "0.5rem",
-              }}
-              onFocus={(e) => {
-                e.target.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.3)";
-                e.target.style.borderColor = "#3b82f6";
-              }}
-              onBlur={(e) => {
-                e.target.style.boxShadow = "none";
-              }}
-            />
-          </div>
+          {error && (
+            <div className="userlogin-error-message" role="alert">
+              <FiAlertTriangle className="userlogin-error-icon" />
+              <span>{error}</span>
+            </div>
+          )}
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: "1.5rem",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <input
-                type="checkbox"
-                id="remember"
-                checked={rememberMe}
-                onChange={() => setRememberMe(!rememberMe)}
-                style={{
-                  height: "1rem",
-                  width: "1rem",
-                  borderRadius: "0.25rem",
-                  accentColor: "#2563eb",
-                }}
-              />
-              <label
-                htmlFor="remember"
-                style={{
-                  marginLeft: "0.5rem",
-                  fontSize: "0.875rem",
-                  color: "#4b5563",
-                }}
+          {success && (
+            <div className="userlogin-success-message" role="status">
+              <span>Login successful! Redirecting to dashboard...</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="userlogin-form">
+            <div className="userlogin-form-group">
+              <label htmlFor="email">Email Address</label>
+              <div
+                className={`userlogin-input-wrapper ${
+                  inputFocus.email ? "focused" : ""
+                }`}
               >
-                Remember Me
-              </label>
+                <div className="userlogin-input-icon">
+                  <FiMail />
+                </div>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="your@email.com"
+                  value={credentials.email}
+                  onChange={handleChange}
+                  onFocus={() => handleFocus("email")}
+                  onBlur={() => handleBlur("email")}
+                  required
+                  autoComplete="email"
+                  aria-required="true"
+                />
+              </div>
             </div>
 
-            <a
-              href="/forgot-password"
-              style={{
-                fontSize: "0.875rem",
-                color: "#2563eb",
-                textDecoration: "none",
-                transition: "color 0.3s",
-              }}
-              onMouseOver={(e) => (e.target.style.color = "#1d4ed8")}
-              onMouseOut={(e) => (e.target.style.color = "#2563eb")}
-            >
-              Forgot Password?
-            </a>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || serverStatus === "offline"}
-            className="login-button"
-            style={{
-              width: "100%",
-              backgroundColor:
-                loading || serverStatus === "offline" ? "#93C5FD" : "#2563eb",
-              color: "white",
-              padding: "0.75rem",
-              borderRadius: "0.375rem",
-              border: "none",
-              fontWeight: "500",
-              cursor:
-                loading || serverStatus === "offline" ? "default" : "pointer",
-              transition: "background-color 0.3s",
-              marginBottom: "1.5rem",
-              fontSize: "1rem",
-            }}
-            onMouseOver={(e) => {
-              if (!loading && serverStatus !== "offline")
-                e.target.style.backgroundColor = "#1d4ed8";
-            }}
-            onMouseOut={(e) => {
-              if (!loading && serverStatus !== "offline")
-                e.target.style.backgroundColor = "#2563eb";
-            }}
-          >
-            {loading ? "Logging in..." : "Log In"}
-          </button>
-
-          <div
-            style={{
-              textAlign: "center",
-              margin: "1.5rem 0",
-              position: "relative",
-            }}
-          >
-            <span
-              style={{
-                backgroundColor: "white",
-                padding: "0 0.75rem",
-                color: "#6b7280",
-                position: "relative",
-                zIndex: "1",
-              }}
-            >
-              Or sign in with
-            </span>
-            <div
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "0",
-                right: "0",
-                height: "1px",
-                backgroundColor: "#e5e7eb",
-                zIndex: "0",
-              }}
-            ></div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "1rem",
-              marginBottom: "1.5rem",
-            }}
-          >
-            <button
-              type="button"
-              style={{
-                width: "100%",
-                padding: "0.75rem",
-                borderRadius: "0.375rem",
-                border: "1px solid #d1d5db",
-                color: "#4b5563",
-                cursor: "pointer",
-                transition: "all 0.3s",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.5rem",
-                backgroundColor: "white",
-                fontSize: "0.875rem",
-              }}
-              onMouseOver={(e) => {
-                e.target.style.borderColor = "#3b82f6";
-                e.target.style.color = "#2563eb";
-              }}
-              onMouseOut={(e) => {
-                e.target.style.borderColor = "#d1d5db";
-                e.target.style.color = "#4b5563";
-              }}
-            >
-              <i className="fab fa-google"></i> Google
-            </button>
-            <button
-              type="button"
-              style={{
-                width: "100%",
-                padding: "0.75rem",
-                borderRadius: "0.375rem",
-                border: "1px solid #d1d5db",
-                color: "#4b5563",
-                cursor: "pointer",
-                transition: "all 0.3s",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.5rem",
-                backgroundColor: "white",
-                fontSize: "0.875rem",
-              }}
-              onMouseOver={(e) => {
-                e.target.style.borderColor = "#3b82f6";
-                e.target.style.color = "#2563eb";
-              }}
-              onMouseOut={(e) => {
-                e.target.style.borderColor = "#d1d5db";
-                e.target.style.color = "#4b5563";
-              }}
-            >
-              <i className="fab fa-facebook-f"></i> Facebook
-            </button>
-          </div>
-
-          <div className="login-links">
-            <p
-              style={{
-                textAlign: "center",
-                color: "#6b7280",
-                marginTop: "1rem",
-                fontSize: "0.875rem",
-              }}
-            >
-              Don't have an account?
-              <a
-                href="/register"
-                style={{
-                  color: "#2563eb",
-                  textDecoration: "none",
-                  transition: "color 0.3s",
-                  marginLeft: "0.25rem",
-                }}
-                onMouseOver={(e) => (e.target.style.color = "#1d4ed8")}
-                onMouseOut={(e) => (e.target.style.color = "#2563eb")}
+            <div className="userlogin-form-group">
+              <label htmlFor="password">Password</label>
+              <div
+                className={`userlogin-input-wrapper ${
+                  inputFocus.password ? "focused" : ""
+                }`}
               >
-                Sign Up
-              </a>
+                <div className="userlogin-input-icon">
+                  <FiLock />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  placeholder="Enter your password"
+                  value={credentials.password}
+                  onChange={handleChange}
+                  onFocus={() => handleFocus("password")}
+                  onBlur={() => handleBlur("password")}
+                  required
+                  autoComplete="current-password"
+                  aria-required="true"
+                />
+                <button
+                  type="button"
+                  className="userlogin-toggle-password"
+                  onClick={toggleShowPassword}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <FiEyeOff /> : <FiEye />}
+                </button>
+              </div>
+            </div>
+
+            <div className="userlogin-form-actions">
+              <div className="userlogin-remember-me">
+                <input 
+                  type="checkbox" 
+                  id="remember" 
+                  checked={rememberMe}
+                  onChange={() => setRememberMe(!rememberMe)}
+                />
+                <label htmlFor="remember">Remember me</label>
+              </div>
+              <Link to="/forgot-password" className="userlogin-forgot-password">
+                Forgot Password?
+              </Link>
+            </div>
+
+            <button
+              type="submit"
+              className={`userlogin-button ${loading ? "loading" : ""}`}
+              disabled={loading || success}
+            >
+              {loading
+                ? "Signing in..."
+                : success
+                ? "Signed in!"
+                : "Sign in securely"}
+            </button>
+          </form>
+
+          <div className="userlogin-footer">
+            <p>
+              Don't have an account?{" "}
+              <Link to="/register" className="userlogin-signup-link">
+                Create account
+              </Link>
             </p>
           </div>
-        </form>
+        </div>
+
+        <div className="userlogin-features">
+          <h2>Secure Your Digital Life</h2>
+          <ul className="userlogin-features-list">
+            <li>
+              <div className="userlogin-feature-icon">
+                <FiShield />
+              </div>
+              <div className="userlogin-feature-text">
+                <h3>Military-Grade Encryption</h3>
+                <p>Your passwords are protected with AES-256 encryption</p>
+              </div>
+            </li>
+            <li>
+              <div className="userlogin-feature-icon">
+                <FiRefreshCw />
+              </div>
+              <div className="userlogin-feature-text">
+                <h3>Sync Across Devices</h3>
+                <p>Access your passwords on all your devices</p>
+              </div>
+            </li>
+            <li>
+              <div className="userlogin-feature-icon">
+                <FiAlertTriangle />
+              </div>
+              <div className="userlogin-feature-text">
+                <h3>Data Breach Alerts</h3>
+                <p>Get notified if your accounts are compromised</p>
+              </div>
+            </li>
+            <li>
+              <div className="userlogin-feature-icon">
+                <FiKey />
+              </div>
+              <div className="userlogin-feature-text">
+                <h3>Auto-Fill & Generate</h3>
+                <p>Create strong passwords and fill forms automatically</p>
+              </div>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   );
