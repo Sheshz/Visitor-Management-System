@@ -1,6 +1,7 @@
 /**
  * Enhanced SessionManager for secure token management
  * Uses sessionStorage for sensitive data to improve security
+ * With separate handling for host and user tokens
  */
 export class SessionManager {
   // Session timeout - set to 24 hours in ms
@@ -45,14 +46,30 @@ export class SessionManager {
   }
   
   // Check if user is authenticated with valid token
-  static isAuthenticated() {
-    return this.hasValidItem("token");
+  static isUserAuthenticated() {
+    return this.hasValidItem("userToken");
   }
   
-  // Add the missing setToken method
-  static setToken(token) {
+  // Check if host is authenticated with valid token
+  static isHostAuthenticated() {
+    return this.hasValidItem("hostToken");
+  }
+  
+  // Set user token
+  static setUserToken(token) {
     if (token) {
-      this.setItem("token", token);
+      this.setItem("userToken", token);
+      this.setItem("userRole", "user");
+      return true;
+    }
+    return false;
+  }
+  
+  // Set host token
+  static setHostToken(token) {
+    if (token) {
+      this.setItem("hostToken", token);
+      this.setItem("userRole", "host");
       return true;
     }
     return false;
@@ -60,62 +77,127 @@ export class SessionManager {
   
   // Refresh token expiration to extend session
   static refreshTokenExpiration() {
-    if (this.hasValidItem("token")) {
-      const token = sessionStorage.getItem("token");
-      this.setItem("token", token); // This updates the expiration
-      
-      // Also refresh other related items
-      const refreshToken = sessionStorage.getItem("refreshToken");
-      if (refreshToken) {
-        this.setItem("refreshToken", refreshToken);
-      }
-      
-      return true;
+    let refreshed = false;
+    
+    if (this.hasValidItem("userToken")) {
+      const token = sessionStorage.getItem("userToken");
+      this.setItem("userToken", token); // This updates the expiration
+      refreshed = true;
     }
-    return false;
+    
+    if (this.hasValidItem("hostToken")) {
+      const token = sessionStorage.getItem("hostToken");
+      this.setItem("hostToken", token); // This updates the expiration
+      refreshed = true;
+    }
+    
+    // Also refresh other related items if needed
+    if (refreshed && this.hasValidItem("refreshToken")) {
+      const refreshToken = sessionStorage.getItem("refreshToken");
+      this.setItem("refreshToken", refreshToken);
+    }
+    
+    return refreshed;
   }
   
   // Transfer auth data from localStorage to sessionStorage if needed
   static transferFromLocalStorage() {
-    const localToken = localStorage.getItem("token");
+    let transferred = false;
     
-    if (localToken && !sessionStorage.getItem("token")) {
-      // Transfer token
-      this.setItem("token", localToken);
-      
-      // Transfer refresh token if exists
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (refreshToken) {
-        this.setItem("refreshToken", refreshToken);
-      }
-      
-      // Transfer other important data
-      const userRole = localStorage.getItem("userRole");
-      if (userRole) {
-        this.setItem("userRole", userRole);
-      }
-      
-      // Clear localStorage after transfer for better security
-      localStorage.removeItem("token");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("userRole");
-      
-      return true;
+    // Transfer user token if exists
+    const userToken = localStorage.getItem("token") || localStorage.getItem("userToken");
+    if (userToken && !sessionStorage.getItem("userToken")) {
+      this.setItem("userToken", userToken);
+      this.setItem("userRole", "user");
+      transferred = true;
     }
     
-    return false;
+    // Transfer host token if exists (key priority)
+    const hostToken = localStorage.getItem("hostToken");
+    if (hostToken && !sessionStorage.getItem("hostToken")) {
+      this.setItem("hostToken", hostToken);
+      this.setItem("userRole", "host");
+      transferred = true;
+    }
+    
+    // Transfer refresh token if exists
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (refreshToken && transferred) {
+      this.setItem("refreshToken", refreshToken);
+    }
+    
+    // Clear localStorage after transfer for better security
+    // but keep hostToken and token separate to avoid conflicts
+    if (transferred) {
+      if (userToken) localStorage.removeItem("token");
+      if (hostToken) localStorage.removeItem("hostToken");
+      localStorage.removeItem("refreshToken");
+    }
+    
+    return transferred;
   }
   
   // Get user role if available
   static getUserRole() {
-    return this.getItem("userRole") || "user";
+    return this.getItem("userRole") || "guest";
   }
   
-  // Get token with automatic expiration check
+  // Get appropriate token based on current role
   static getToken() {
+    const role = this.getUserRole();
+    
+    if (role === "host" && this.hasValidItem("hostToken")) {
+      return this.getItem("hostToken");
+    } else if (role === "user" && this.hasValidItem("userToken")) {
+      return this.getItem("userToken");
+    }
+    
+    // Backwards compatibility with existing code
     if (this.hasValidItem("token")) {
       return this.getItem("token");
     }
+    
     return null;
+  }
+  
+  // Get host token specifically (for host-only operations)
+  static getHostToken() {
+    if (this.hasValidItem("hostToken")) {
+      return this.getItem("hostToken");
+    }
+    return null;
+  }
+  
+  // Get user token specifically (for user-only operations)
+  static getUserToken() {
+    if (this.hasValidItem("userToken")) {
+      return this.getItem("userToken");
+    }
+    return null;
+  }
+  
+  // Log out user - clear user-specific tokens
+  static logoutUser() {
+    this.removeItem("userToken");
+    if (this.getUserRole() === "user") {
+      this.removeItem("userRole");
+    }
+  }
+  
+  // Log out host - clear host-specific tokens
+  static logoutHost() {
+    this.removeItem("hostToken");
+    if (this.getUserRole() === "host") {
+      this.removeItem("userRole");
+    }
+  }
+  
+  // Complete logout - clear all auth tokens
+  static logout() {
+    this.removeItem("userToken");
+    this.removeItem("hostToken");
+    this.removeItem("token");
+    this.removeItem("refreshToken");
+    this.removeItem("userRole");
   }
 }

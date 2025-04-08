@@ -1,29 +1,208 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { SessionManager } from "../../utils/SessionManager"; // Import your SessionManager
 import "../../CSS/HostLogin.css";
 
 const HostLogin = () => {
+  // Form states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [forceShowLogin, setForceShowLogin] = useState(false);
+
+  // Background image state
+  const [currentBgIndex, setCurrentBgIndex] = useState(0);
+
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Check if user is already logged in
+  // Professional business-oriented background images
+  const backgroundImages = [
+    "https://images.unsplash.com/photo-1504439904031-93ded9f93e4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2071&q=80",
+    "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80", // Business meeting
+    "https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80", // Doctor image
+    "https://images.unsplash.com/photo-1558403194-611308249627?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80", // Corporate trainer/presentation
+    "https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2074&q=80", // Professional workspace
+    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&auto=format&fit=crop",
+  ];
+
+  // Professional testimonials
+  const testimonials = [
+    {
+      quote:
+        "GetePass Pro transformed how I manage client consultations and bookings.",
+      author: "Dr. James Wilson, Business Consultant",
+    },
+    {
+      quote:
+        "Using GetePass Pro increased my client engagement by 40% in just two months.",
+      author: "Michelle Lee, Financial Advisor",
+    },
+    {
+      quote:
+        "GetePass Pro helps me organize patient appointments efficiently and improve care delivery.",
+      author: "Dr. Sarah Johnson, Cardiologist",
+    },
+    {
+      quote:
+        "With GetePass Pro, I can focus on delivering quality training while the platform handles all scheduling logistics.",
+      author: "Dr. Lisa Thompson, Corporate Trainer",
+    },
+    {
+      quote:
+        "GetePass Pro streamlined my scheduling process and improved client satisfaction.",
+      author: "Robert Chen, Executive Coach",
+    },
+    {
+      quote:
+        "The most efficient platform for managing professional appointments and meetings.",
+      author: "Thomas Wright, Engineer",
+    },
+  ];
+
+  // Auto-change background image every 5 seconds
   useEffect(() => {
-    const hostToken = localStorage.getItem("hostToken");
+    const interval = setInterval(() => {
+      setCurrentBgIndex((prevIndex) =>
+        prevIndex === backgroundImages.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 5000);
 
-    // Only redirect if there's actually a valid token
-    // Make sure it's not an expired or invalid token
-    if (hostToken && hostToken !== "undefined" && hostToken !== "null") {
-      console.log("Valid token found, redirecting to dashboard...");
-      navigate("/host-dashboard");
-    } else {
-      // If token is invalid, remove it
+    return () => clearInterval(interval);
+  }, [backgroundImages.length]);
+
+  // Check URL parameters for login-specific actions
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    // If logout=true or force=true param is present, clear tokens and show login form
+    if (params.get("logout") === "true" || params.get("force") === "true") {
+      console.log("Logout or force parameter detected, clearing tokens");
+      SessionManager.logoutHost();
       localStorage.removeItem("hostToken");
+      setForceShowLogin(true);
     }
-  }, [navigate]);
+
+    // If error parameter is present, show error message
+    if (params.get("error") === "true") {
+      setError("Session expired. Please login again.");
+    }
+  }, [location.search]);
+
+  // Check if host is already logged in
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        // First check if we should force the login page
+        if (forceShowLogin) {
+          console.log("Force showing login form");
+          setIsCheckingAuth(false);
+          return;
+        }
+
+        // Also check URL parameters again to be sure
+        const params = new URLSearchParams(location.search);
+        if (params.get("logout") === "true" || params.get("force") === "true") {
+          console.log("URL params force login form");
+          setIsCheckingAuth(false);
+          return;
+        }
+
+        // Now check SessionManager for host authentication
+        const isAuthenticatedInSession = SessionManager.isHostAuthenticated();
+        if (isAuthenticatedInSession) {
+          // Verify that this is actually a host token, not just any token
+          const userRole = SessionManager.getUserRole();
+          if (userRole === "host") {
+            console.log("Host already authenticated via SessionManager");
+            navigate("/host-dashboard");
+            return;
+          } else {
+            console.log("User authenticated but not as host");
+            SessionManager.logoutUser(); // Clear non-host tokens
+            setIsCheckingAuth(false);
+            return;
+          }
+        }
+
+        // As a fallback, check localStorage
+        const hostToken = localStorage.getItem("hostToken");
+        if (
+          hostToken &&
+          hostToken !== "undefined" &&
+          hostToken !== "null" &&
+          hostToken.length > 10
+        ) {
+          // Verify the token with the server
+          try {
+            const response = await fetch(
+              "http://localhost:5000/api/hosts/validate-token",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${hostToken}`,
+                },
+              }
+            );
+
+            const data = await response.json();
+
+            if (response.ok && data.valid === true && data.role === "host") {
+              console.log(
+                "Found valid host token in localStorage, transferring to SessionManager"
+              );
+              // Transfer to SessionManager and redirect
+              SessionManager.setHostToken(hostToken);
+              navigate("/host-dashboard");
+              return;
+            } else {
+              console.log("Invalid or expired token in localStorage");
+              localStorage.removeItem("hostToken");
+            }
+          } catch (validationError) {
+            console.error("Token validation error:", validationError);
+            // If server is unavailable, we'll fall back to token expiration check
+            // This is less secure but prevents being locked out if server is down
+            
+            // Check for token expiry info in localStorage
+            const tokenExpiry = localStorage.getItem("hostTokenExpiry");
+            if (tokenExpiry && parseInt(tokenExpiry) > Date.now()) {
+              console.log("Token validation failed but token is not expired, using anyway");
+              SessionManager.setHostToken(hostToken);
+              navigate("/host-dashboard");
+              return;
+            } else {
+              console.log("Token expired or no expiry info found");
+              localStorage.removeItem("hostToken");
+              localStorage.removeItem("hostTokenExpiry");
+            }
+          }
+        }
+
+        // If we reach here, no valid authentication found
+        console.log("No valid authentication found, showing login form");
+        setIsCheckingAuth(false);
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkExistingSession();
+  }, [navigate, forceShowLogin, location.search]);
+
+  // Check for remembered email
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("gp_remember_email");
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,6 +210,8 @@ const HostLogin = () => {
     setError("");
 
     try {
+      console.log("Attempting host login with:", { email });
+
       const response = await fetch(
         "http://localhost:5000/api/hosts/loginHost",
         {
@@ -43,7 +224,6 @@ const HostLogin = () => {
         }
       );
 
-      // Handle non-JSON responses
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         throw new Error(
@@ -52,63 +232,133 @@ const HostLogin = () => {
       }
 
       const data = await response.json();
+      console.log("Login response:", data);
 
       if (!response.ok) {
         throw new Error(data.message || "Login failed");
       }
 
-      // Only save token after successful API call
-      console.log("Token received from server:", data.token);
-
-      // Make sure we're saving a valid token
       if (data.token) {
+        console.log("Host authentication successful, saving token");
+
+        // Clear any previous tokens first
+        SessionManager.logoutHost();
+        localStorage.removeItem("hostToken");
+
+        // Save token in localStorage for backward compatibility
         localStorage.setItem("hostToken", data.token);
-        // Handle successful login
+        
+        // Store token expiry for fallback validation
+        if (data.expiresAt) {
+          localStorage.setItem("hostTokenExpiry", data.expiresAt);
+        } else {
+          // Default to 24 hours if no expiry provided
+          const expiryTime = Date.now() + (24 * 60 * 60 * 1000);
+          localStorage.setItem("hostTokenExpiry", expiryTime.toString());
+        }
+
+        // Also save in SessionManager for better security
+        SessionManager.setHostToken(data.token);
+
+        // Clear any user tokens to prevent conflicts
+        SessionManager.logoutUser();
+        localStorage.removeItem("token");
+        localStorage.removeItem("userToken");
+
+        // Set role explicitly
+        SessionManager.setItem("userRole", "host");
+
+        // Save additional host info if available
+        if (data.hostId) {
+          localStorage.setItem("hostId", data.hostId);
+          SessionManager.setItem("hostId", data.hostId);
+        }
+
+        if (data.name) {
+          localStorage.setItem("hostName", data.name);
+          SessionManager.setItem("hostName", data.name);
+        }
+
+        if (rememberMe) {
+          localStorage.setItem("gp_remember_email", email);
+        } else {
+          localStorage.removeItem("gp_remember_email");
+        }
+
+        // Navigate to dashboard after successful login
         navigate("/host-dashboard");
       } else {
         throw new Error("No token received from server");
       }
     } catch (error) {
-      console.error("Error logging in:", error);
+      console.error("Login error:", error);
       setError(error.message || "Failed to login");
-      // Clear any invalid tokens
       localStorage.removeItem("hostToken");
-    } finally {
+      SessionManager.logoutHost();
       setIsLoading(false);
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  // Show loading spinner while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="gp-login-container">
+        <div className="gp-login-loading">
+          <span className="gp-spinner"></span>
+          <p>Checking login status...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="host-login-container">
-      <div className="host-login-wrapper">
-        <div className="host-login-left">
-          <div className="host-login-brand">
-            <h2>Host Portal</h2>
-            <p>Manage your properties and bookings in one place</p>
+    <div className="gp-login-container">
+      <div className="gp-login-wrapper">
+        <div className="gp-login-left">
+          <div className="gp-login-brand">
+            <h2>GetePass Pro</h2>
+            <p>Share your expertise and connect with visitors</p>
           </div>
-          <div className="host-login-illustration">
-            <img src="/api/placeholder/500/420" alt="Host illustration" />
+          <div
+            className="gp-login-illustration"
+            style={{
+              backgroundImage: `url(${backgroundImages[currentBgIndex]})`,
+            }}
+          >
+            <div className="gp-image-overlay">
+              <div className="gp-testimonial">
+                <p>"{testimonials[currentBgIndex].quote}"</p>
+                <span>{testimonials[currentBgIndex].author}</span>
+              </div>
+            </div>
+          </div>
+          <div className="gp-image-indicators">
+            {backgroundImages.map((_, index) => (
+              <span
+                key={index}
+                className={`gp-indicator ${
+                  index === currentBgIndex ? "active" : ""
+                }`}
+                onClick={() => setCurrentBgIndex(index)}
+              />
+            ))}
           </div>
         </div>
 
-        <div className="host-login-right">
-          <div className="host-login-card">
-            <div className="host-login-header">
+        <div className="gp-login-right">
+          <div className="gp-login-card">
+            <div className="gp-login-header">
               <h1>Welcome Back</h1>
-              <p>Please log in to access your host dashboard</p>
+              <p>Please log in to access your professional dashboard</p>
             </div>
 
-            {error && <div className="host-error-message">{error}</div>}
+            {error && <div className="gp-error-message">{error}</div>}
 
-            <form onSubmit={handleSubmit} className="host-login-form">
-              <div className="host-form-group">
+            <form onSubmit={handleSubmit} className="gp-login-form">
+              <div className="gp-form-group">
                 <label htmlFor="email">Email Address</label>
-                <div className="host-input-with-icon">
-                  <div className="host-input-icon">
+                <div className="gp-input-with-icon">
+                  <div className="gp-input-icon">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="20"
@@ -135,15 +385,15 @@ const HostLogin = () => {
                 </div>
               </div>
 
-              <div className="host-form-group">
-                <div className="host-password-header">
+              <div className="gp-form-group">
+                <div className="gp-password-header">
                   <label htmlFor="password">Password</label>
-                  <a href="/forgot-password" className="host-forgot-password">
+                  <a href="/forgot-password" className="gp-forgot-password">
                     Forgot Password?
                   </a>
                 </div>
-                <div className="host-input-with-icon">
-                  <div className="host-input-icon">
+                <div className="gp-input-with-icon">
+                  <div className="gp-input-icon">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="20"
@@ -175,8 +425,8 @@ const HostLogin = () => {
                     required
                   />
                   <div
-                    className="host-password-toggle"
-                    onClick={togglePasswordVisibility}
+                    className="gp-password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
                       <svg
@@ -213,22 +463,26 @@ const HostLogin = () => {
                 </div>
               </div>
 
-              <div className="host-remember-me">
-                <label className="host-checkbox-container">
-                  <input type="checkbox" />
-                  <span className="host-checkbox"></span>
+              <div className="gp-remember-me">
+                <label className="gp-checkbox-container">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={() => setRememberMe(!rememberMe)}
+                  />
+                  <span className="gp-checkbox"></span>
                   Remember me
                 </label>
               </div>
 
               <button
                 type="submit"
-                className="host-login-button"
+                className="gp-login-button"
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <>
-                    <span className="host-spinner"></span>
+                    <span className="gp-spinner"></span>
                     <span>Logging in...</span>
                   </>
                 ) : (
@@ -237,48 +491,14 @@ const HostLogin = () => {
               </button>
             </form>
 
-            <div className="host-login-divider">
-              <span>or</span>
-            </div>
-
-            <div className="host-social-login">
-              <button className="host-google-button">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="#4285F4"
-                >
-                  <path
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    fill="#4285F4"
-                  />
-                  <path
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    fill="#34A853"
-                  />
-                  <path
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                    fill="#FBBC05"
-                  />
-                  <path
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    fill="#EA4335"
-                  />
-                </svg>
-                Sign in with Google
-              </button>
-            </div>
-
-            <div className="host-login-footer">
+            <div className="gp-login-footer">
               <p>
                 Don't have an account?{" "}
-                <a href="/become-host" className="host-link">
-                  Become a Host
+                <a href="/become-host" className="gp-link">
+                  Join as a Professional
                 </a>
               </p>
-              <a href="/" className="host-home-link">
+              <a href="/" className="gp-home-link">
                 Back to Home
               </a>
             </div>

@@ -96,12 +96,12 @@ const auth = (req, res, next) => {
   }
 };
 
-// Add a verifyToken alias for backward compatibility with your routes
+// Add a verifyToken alias for backward compatibility
 const verifyToken = auth;
 
 module.exports = {
   verifyUserToken,
   verifyHostToken,
   auth,
-  verifyToken  // Added this alias to match what's used in statisticsRoutes.js
+  verifyToken
 };

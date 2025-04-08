@@ -21,9 +21,7 @@ import { UserService } from "./services/UserService";
 import HostRegistrationFlow from "./components/hosts/HostRegistrationFlow";
 import TokenRefreshHandler from "./components/TokenRefreshHandler";
 import ProtectedRoute from "./components/ProtectedRoute";
-
-// Protected route component - moved to its own file (ProtectedRoute.js)
-// This is now imported from "./components/ProtectedRoute" above
+import LogoutHandler from "./components/LogoutHandler";
 
 function App() {
   const userService = new UserService();
@@ -39,13 +37,35 @@ function App() {
   return (
     <Router>
       <TokenRefreshHandler>
+        {/* Uncomment this to debug current path */}
+        {/* <div style={{ padding: "10px", background: "#eee", fontSize: "12px" }}>
+          Current Path: {window.location.pathname}
+        </div> */}
+        
         <Routes>
-          {/* Define all the routes in the application */}
+          {/* Home route */}
           <Route path="/" element={<Home />} />
+          
+          {/* User authentication routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          
+          {/* Specific host routes */}
           <Route path="/host-login" element={<HostLogin />} />
+          <Route path="/become-host" element={<HostRegistrationFlow />} />
+          <Route path="/host/register" element={<HostRegistrationFlow />} />
 
+          {/* Logout routes */}
+          <Route 
+            path="/logout" 
+            element={<LogoutHandler redirectTo="/login" />} 
+          />
+          <Route 
+            path="/host-logout" 
+            element={<LogoutHandler redirectTo="/host-login" />} 
+          />
+
+          {/* Protected user routes */}
           <Route
             path="/dashboard/*"
             element={
@@ -55,25 +75,12 @@ function App() {
             }
           />
 
+          {/* Protected host routes - require host authentication */}
           <Route
             path="/host-dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requireHost={true}>
                 <HostDashboard />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route path="/host-login" element={<HostLogin />} />
-          <Route path="/experts" element={<ExpertsPage />} />
-          <Route path="/about" element={<AboutUsPage />} />
-          <Route path="/host/register" element={<HostRegistrationFlow />} />
-
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <ProfilePage />
               </ProtectedRoute>
             }
           />
@@ -81,8 +88,22 @@ function App() {
           <Route
             path="/host-profile"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requireHost={true}>
                 <HostProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Other public routes */}
+          <Route path="/experts" element={<ExpertsPage />} />
+          <Route path="/about" element={<AboutUsPage />} />
+          
+          {/* Protected user profile */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             }
           />

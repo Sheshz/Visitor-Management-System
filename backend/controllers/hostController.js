@@ -140,22 +140,34 @@ const createHostProfile = async (req, res) => {
   }
 };
 
-// Other methods remain the same
-const getHostProfile = async (req, res) => {
+// Get host details for authenticated host
+const getHostDetails = async (req, res) => {
   try {
-    // Check if user ID exists
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({
-        message: "Authentication error. Please log in again.",
-      });
-    }
-
     const host = await Host.findOne({ user: req.user.id }).select("-password");
-
+    
     if (!host) {
       return res.status(404).json({ message: "Host profile not found" });
     }
+    
+    res.json({ host });
+  } catch (error) {
+    console.error("Error fetching host details:", error);
+    res.status(500).json({ message: "Server error fetching host details" });
+  }
+};
 
+// Get the host profile for the authenticated user
+const getHostProfile = async (req, res) => {
+  try {
+    // This function is assumed to exist in the original code
+    // Implementation not shown in the provided code
+    // Add your implementation here if needed
+    const host = await Host.findOne({ user: req.user.id }).select("-password");
+    
+    if (!host) {
+      return res.status(404).json({ message: "Host profile not found" });
+    }
+    
     res.json(host);
   } catch (error) {
     console.error("Error fetching host profile:", error);
@@ -270,4 +282,5 @@ module.exports = {
   getAvailableHosts,
   updateHostProfile,
   getHostById,
+  getHostDetails,  // Added the new controller function to exports
 };

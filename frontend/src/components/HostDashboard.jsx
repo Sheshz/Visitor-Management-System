@@ -1,77 +1,94 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { User, LogOut, Settings, Calendar, BarChart2, ChevronDown, Home, QrCode, Clock, Network, UserPlus, Menu } from 'lucide-react';
-import "../CSS/HostDashboard.css"; // Import CSS
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  User,
+  LogOut,
+  Settings,
+  Calendar,
+  BarChart2,
+  ChevronDown,
+  Home,
+  QrCode,
+  Clock,
+  Network,
+  UserPlus,
+  Menu,
+} from "lucide-react";
+//import "../CSS/HostDashboard.css"; // Import CSS
 
 export default function HostDashboard() {
-  const [activeItem, setActiveItem] = useState('Overview');
+  const [activeItem, setActiveItem] = useState("Overview");
   const [showDropdown, setShowDropdown] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const [hostData, setHostData] = useState({ name: 'Host', email: 'No email provided' });
+  const [hostData, setHostData] = useState({
+    name: "Host",
+    email: "No email provided",
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     const fetchHostData = async () => {
       setIsLoading(true);
-      const hostToken = localStorage.getItem('hostToken');
-      
+      const hostToken = localStorage.getItem("hostToken");
+
       if (!hostToken) {
-        navigate('/host-login');
+        navigate("/host-login");
         return;
       }
-      
+
       try {
-        const response = await fetch('http://localhost:5000/api/hosts/getHostDetails', {
-          method: 'GET',
-          headers: { 
-            'Authorization': `Bearer ${hostToken}`, 
-            'Content-Type': 'application/json' 
+        // In your HostDashboard.js useEffect:
+        const response = await fetch("http://localhost:5000/api/hosts/me", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${hostToken}`,
+            "Content-Type": "application/json",
           },
-          credentials: 'include', // Include cookies if needed
+          credentials: "include",
         });
-        
+
         if (response.ok) {
           const data = await response.json();
-          setHostData({ 
-            name: data.host?.name || 'Host', 
-            email: data.host?.email || 'No email provided' 
+          setHostData({
+            name: data.host?.name || "Host",
+            email: data.host?.email || "No email provided",
           });
           setError(null);
         } else {
           // If server responds with an error
           const errorData = await response.json();
-          setError(errorData.message || 'Failed to load host data');
-          
+          setError(errorData.message || "Failed to load host data");
+
           // If unauthorized (token expired or invalid), redirect to login
           if (response.status === 401) {
-            localStorage.removeItem('hostToken');
-            navigate('/host-login');
+            localStorage.removeItem("hostToken");
+            navigate("/host-login");
           }
         }
       } catch (error) {
-        console.error('Error fetching host data:', error);
-        setError('Network error. Please check your connection.');
+        console.error("Error fetching host data:", error);
+        setError("Network error. Please check your connection.");
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     fetchHostData();
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem('hostToken');
-    navigate('/host-login');
+    localStorage.removeItem("hostToken");
+    navigate("/host-login");
   };
 
   const navItems = [
-    { name: 'Overview', icon: <Home size={18} /> }, 
-    { name: 'New Visitor', icon: <UserPlus size={18} /> },
-    { name: 'Visitation History', icon: <Clock size={18} /> }, 
-    { name: 'Host Network', icon: <Network size={18} /> },
-    { name: 'QR Code Scanner', icon: <QrCode size={18} /> }
+    { name: "Overview", icon: <Home size={18} /> },
+    { name: "New Visitor", icon: <UserPlus size={18} /> },
+    { name: "Visitation History", icon: <Clock size={18} /> },
+    { name: "Host Network", icon: <Network size={18} /> },
+    { name: "QR Code Scanner", icon: <QrCode size={18} /> },
   ];
 
   if (isLoading) {
@@ -85,13 +102,20 @@ export default function HostDashboard() {
 
   return (
     <div className="dashboard-container">
-      <aside className={`sidebar ${sidebarExpanded ? 'expanded' : ''}`}>
-        <button className="menu-toggle" onClick={() => setSidebarExpanded(!sidebarExpanded)}>
+      <aside className={`sidebar ${sidebarExpanded ? "expanded" : ""}`}>
+        <button
+          className="menu-toggle"
+          onClick={() => setSidebarExpanded(!sidebarExpanded)}
+        >
           <Menu size={24} />
         </button>
         <nav>
           {navItems.map((item) => (
-            <div key={item.name} className={`nav-item ${activeItem === item.name ? 'active' : ''}`} onClick={() => setActiveItem(item.name)}>
+            <div
+              key={item.name}
+              className={`nav-item ${activeItem === item.name ? "active" : ""}`}
+              onClick={() => setActiveItem(item.name)}
+            >
               {item.icon}
               <span>{item.name}</span>
             </div>
@@ -104,14 +128,19 @@ export default function HostDashboard() {
 
       <main className="main-content">
         <header className="header">
-          <div className="profile-section" onClick={() => setShowDropdown(!showDropdown)}>
+          <div
+            className="profile-section"
+            onClick={() => setShowDropdown(!showDropdown)}
+          >
             <div className="avatar">{hostData.name[0]}</div>
             <div className="profile-info">
-              <p className="profile-name">{hostData.name} <ChevronDown size={14} /></p>
+              <p className="profile-name">
+                {hostData.name} <ChevronDown size={14} />
+              </p>
               <p className="profile-email">{hostData.email}</p>
             </div>
           </div>
-          
+
           {showDropdown && (
             <div className="profile-dropdown">
               <div className="dropdown-item">
@@ -131,15 +160,11 @@ export default function HostDashboard() {
         </header>
 
         <div className="content-area">
-          {error && (
-            <div className="error-banner">
-              {error}
-            </div>
-          )}
+          {error && <div className="error-banner">{error}</div>}
           <h2>{activeItem}</h2>
           <p>Welcome to the {activeItem} section.</p>
-          
-          {activeItem === 'Overview' && (
+
+          {activeItem === "Overview" && (
             <div className="dashboard-stats">
               <div className="stat-card">
                 <h3>Today's Visitors</h3>
@@ -157,7 +182,7 @@ export default function HostDashboard() {
           )}
         </div>
       </main>
-      
+
       {/* Additional CSS for new elements */}
       <style>
         {`

@@ -1,81 +1,93 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
-const { verifyHostToken, auth } = require("../middleware/userMiddleware");
+const jwt = require('jsonwebtoken'); // Add this import
+const Host = require('../models/Host'); // Add this import
+const { 
+  loginHost, 
+  createHostProfile, 
+  getHostProfile, 
+  getAvailableHosts, 
+  updateHostProfile, 
+  getHostById,
+  getHostDetails
+} = require('../controllers/hostController');
+const { verifyUserToken, auth } = require('../middleware/userMiddleware');
+const upload = require('../middleware/uploadMiddleware');
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, "../public/uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Setup multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    // Create unique filename with original extension
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+// Validate host token endpoint
+router.post("/validate-token", async (req, res) => {
+  try {
+    // Get the token from the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ valid: false, message: "No token provided" });
+    }
+    
+    const token = authHeader.split(" ")[1];
+    
+    // Verify the token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Check if token belongs to a host
+    if (!decoded.isHost) {
+      return res.status(403).json({ 
+        valid: false, 
+        role: "user", 
+        message: "Token is valid but not for a host" 
+      });
+    }
+    
+    // Check if host still exists in database
+    const host = await Host.findOne({ hostID: decoded.hostId });
+    if (!host) {
+      return res.status(404).json({ 
+        valid: false, 
+        message: "Host account not found" 
+      });
+    }
+    
+    // Return successful validation
+    return res.status(200).json({
+      valid: true,
+      role: "host",
+      hostId: decoded.hostId,
+      name: host.name
+    });
+  } catch (error) {
+    // Handle expired or invalid tokens
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ 
+        valid: false, 
+        message: "Token expired" 
+      });
+    }
+    
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ 
+        valid: false, 
+        message: "Invalid token" 
+      });
+    }
+    
+    // Handle other errors
+    console.error("Token validation error:", error);
+    return res.status(500).json({ 
+      valid: false, 
+      message: "Server error during validation" 
+    });
   }
 });
 
-// Set up upload limits and file filter
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit as specified in frontend
-  fileFilter: function (req, file, cb) {
-    // Accept only image files
-    if (!file.mimetype.startsWith('image/')) {
-      return cb(new Error('Only image files are allowed!'), false);
-    }
-    cb(null, true);
-  }
-});
+// Host authentication routes
+router.post('/login', loginHost);
+router.post('/loginHost', loginHost); // Add this route to match frontend's expectations
 
-// Import controllers
-const hostController = require("../controllers/hostController");
-
-// Error handling middleware for multer
-const handleMulterError = (err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    // Multer error
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ message: "File size exceeds 5MB limit" });
-    }
-    return res.status(400).json({ message: `Upload error: ${err.message}` });
-  } else if (err) {
-    // Other errors
-    return res.status(400).json({ message: err.message });
-  }
-  next();
-};
-
-// Routes
-router.post(
-  "/create", 
-  auth, 
-  upload.single("avatar"),
-  handleMulterError,
-  hostController.createHostProfile
-);
-
-router.get("/me", verifyHostToken, hostController.getHostProfile);
-router.get("/available", hostController.getAvailableHosts);
-router.get("/:hostId", hostController.getHostById);
-router.put(
-  "/update", 
-  verifyHostToken, 
-  upload.single("avatar"), 
-  handleMulterError,
-  hostController.updateHostProfile
-);
-
-// Add both login routes to match both potential endpoints
-router.post("/login", hostController.loginHost);
-router.post("/loginHost", hostController.loginHost); // Add this line to fix the route issue
+// Host profile routes
+router.post('/create-profile', auth, upload.single('avatar'), createHostProfile);
+router.get('/profile', auth, getHostProfile);
+router.get('/getHostDetails', auth, getHostDetails);
+router.get('/available', getAvailableHosts);
+router.put('/update-profile', auth, upload.single('avatar'), updateHostProfile);
+router.get('/:hostId', getHostById);
 
 module.exports = router;
