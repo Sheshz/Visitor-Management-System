@@ -36,8 +36,8 @@ const UserLogin = () => {
 
   // Check for existing session
   useEffect(() => {
-    // Check if already authenticated with valid token
-    if (SessionManager.isAuthenticated()) {
+    // Check if already authenticated with valid token - use isUserAuthenticated instead of isAuthenticated
+    if (SessionManager.isUserAuthenticated()) {
       navigate("/dashboard");
       return;
     }
@@ -114,8 +114,8 @@ const UserLogin = () => {
         loginTime: new Date().toISOString()
       };
 
-      // Store in both session storage and localStorage if rememberMe is checked
-      SessionManager.setToken(token);
+      // Store token using the appropriate SessionManager method
+      SessionManager.setUserToken(token);
       
       // Always store token in localStorage to prevent dashboard errors
       localStorage.setItem("token", token);
@@ -125,7 +125,6 @@ const UserLogin = () => {
       SessionManager.setItem("userEmail", userData.email);
       SessionManager.setItem("userId", userData.userId);
       SessionManager.setItem("loginTime", userData.loginTime);
-      SessionManager.setItem("isAuthenticated", "true");
       
       // If rememberMe is checked, store user info in localStorage as well
       if (rememberMe) {
@@ -134,7 +133,6 @@ const UserLogin = () => {
         localStorage.setItem("userEmail", userData.email);
         localStorage.setItem("userId", userData.userId);
         localStorage.setItem("loginTime", userData.loginTime);
-        localStorage.setItem("isAuthenticated", "true");
       }
       
       // Configure axios default headers for future requests

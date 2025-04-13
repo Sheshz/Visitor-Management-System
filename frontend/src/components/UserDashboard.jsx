@@ -38,28 +38,39 @@ const UserDashboard = () => {
   const [hasNewNotifications, setHasNewNotifications] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileDropdownRef = useRef(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // Check if token exists and redirect if not - use enhanced SessionManager
+  // Check if token exists and redirect if not
   useEffect(() => {
-    // Check if already authenticated with valid token
-    if (SessionManager.isAuthenticated()) {
-      // User is authenticated, refresh token expiration to extend session
-      SessionManager.refreshTokenExpiration();
-      return; // Exit early
+    // Try to transfer from localStorage if needed
+    SessionManager.transferFromLocalStorage();
+    
+    // Check if authenticated with valid token after transfer
+    if (!SessionManager.isAuthenticated()) {
+      // Attempt to check for legacy token in localStorage
+      const localToken = localStorage.getItem("token");
+      if (localToken) {
+        // Set it in sessionManager
+        SessionManager.setToken(localToken);
+        
+        // Also set it as a user token for the new system
+        SessionManager.setUserToken(localToken);
+      } else {
+        // No valid token anywhere, redirect to login
+        navigate("/login", { replace: true });
+        return;
+      }
     }
     
-    // Try to transfer from localStorage if needed
-    const transferred = SessionManager.transferFromLocalStorage();
-    if (!transferred) {
-      // No valid token anywhere, redirect to login
-      navigate("/login", { replace: true });
-    }
-  }, []); // No dependencies to avoid infinite loops
+    // User is authenticated, refresh token expiration to extend session
+    SessionManager.refreshTokenExpiration();
+    setAuthChecked(true);
+  }, [navigate]);
 
-  // Modify useUserData hook to use sessionStorage token (assuming you can modify the hook)
-  // If you can't modify the hook, you may need to pass the token as a prop
-  const { userData, notifications, loading, error, refreshData } =
-    useUserData();
+  // Modify useUserData hook to use the token from SessionManager
+  const { userData, notifications, loading, error, refreshData } = useUserData(
+    SessionManager.getToken()
+  );
 
   // Generate profile color based on user email when available
   const profileColor = userData?.email
@@ -165,9 +176,7 @@ const UserDashboard = () => {
   // Handle logout - use enhanced SessionManager
   const handleLogout = () => {
     // Clear sessionStorage
-    SessionManager.clear();
-    // Also clear localStorage token if it exists
-    localStorage.removeItem("token");
+    SessionManager.logout();
     // Dispatch a custom event if needed
     window.dispatchEvent(new Event("user:logout"));
     // Redirect to login page
@@ -176,19 +185,24 @@ const UserDashboard = () => {
 
   // Retry fetching data if there's an error
   const handleRetry = () => {
-    refreshData();
+    refreshData(SessionManager.getToken());
   };
 
-  if (loading) return <div className="loading">Loading dashboard...</div>;
+  // If still checking authentication
+  if (!authChecked) {
+    return <div className="userDashboardLoading">Checking authentication...</div>;
+  }
+
+  if (loading) return <div className="userDashboardLoading">Loading dashboard...</div>;
 
   if (error) {
     return (
-      <div className="error-container">
-        <div className="error-message">Error: {error}</div>
-        <button onClick={handleRetry} className="retry-button">
+      <div className="userDashboardErrorContainer">
+        <div className="userDashboardErrorMessage">Error: {error}</div>
+        <button onClick={handleRetry} className="userDashboardRetryButton">
           Retry
         </button>
-        <button onClick={handleLogout} className="logout-button">
+        <button onClick={handleLogout} className="userDashboardLogoutButton">
           Go to Login
         </button>
       </div>
@@ -202,28 +216,28 @@ const UserDashboard = () => {
       : userData?.name || "User";
 
   return (
-    <div className="dashboard-container">
+    <div className="userDashboardContainer">
       {/* Sidebar */}
-      <div className={`sidebar ${collapsed ? "collapsed" : ""}`}>
-        <div className="logo-container">
-          <div className="logo-wrapper">
-            <div className="logo">GP</div>
-            {!collapsed && <span className="logo-text">GetPass Pro</span>}
+      <div className={`userDashboardSidebar ${collapsed ? "userDashboardCollapsed" : ""}`}>
+        <div className="userDashboardLogoContainer">
+          <div className="userDashboardLogoWrapper">
+            <div className="userDashboardLogo">GP</div>
+            {!collapsed && <span className="userDashboardLogoText">GetPass Pro</span>}
           </div>
           {!collapsed && (
-            <button onClick={toggleSidebar} className="collapse-btn">
+            <button onClick={toggleSidebar} className="userDashboardCollapseBtn">
               <ChevronLeft size={20} />
             </button>
           )}
         </div>
         {collapsed && (
-          <div className="expand-btn-container">
-            <button onClick={toggleSidebar} className="expand-btn">
+          <div className="userDashboardExpandBtnContainer">
+            <button onClick={toggleSidebar} className="userDashboardExpandBtn">
               <Menu size={20} />
             </button>
           </div>
         )}
-        <div className="menu-container">
+        <div className="userDashboardMenuContainer">
           {menuItems.map((item) => (
             <div
               key={item.name}
@@ -234,41 +248,41 @@ const UserDashboard = () => {
                   setActiveMenu(item.name);
                 }
               }}
-              className={`menu-item ${
-                activeMenu === item.name ? "active" : ""
+              className={`userDashboardMenuItem ${
+                activeMenu === item.name ? "userDashboardActive" : ""
               }`}
             >
-              <div className={collapsed ? "icon-centered" : "icon"}>
+              <div className={collapsed ? "userDashboardIconCentered" : "userDashboardIcon"}>
                 {item.icon}
               </div>
-              {!collapsed && <span className="menu-text">{item.name}</span>}
+              {!collapsed && <span className="userDashboardMenuText">{item.name}</span>}
             </div>
           ))}
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="main-content">
+      <div className="userDashboardMainContent">
         {/* Header */}
-        <div className="header">
-          <h1 className="header-title">User VMS Dashboard</h1>
-          <div className="user-section">
+        <div className="userDashboardHeader">
+          <h1 className="userDashboardHeaderTitle">User VMS Dashboard</h1>
+          <div className="userDashboardUserSection">
             <div
-              className="notification-icon"
+              className="userDashboardNotificationIcon"
               onClick={handleNotificationClick}
             >
-              <Mail size={18} className="mail-icon" />
-              {hasNewNotifications && <div className="notification-dot"></div>}
+              <Mail size={18} className="userDashboardMailIcon" />
+              {hasNewNotifications && <div className="userDashboardNotificationDot"></div>}
             </div>
 
             {userData ? (
               <div
-                className="user-profile"
+                className="userDashboardUserProfile"
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                 ref={profileDropdownRef}
               >
                 <div
-                  className="avatar"
+                  className="userDashboardAvatar"
                   style={{ backgroundColor: profileColor }}
                 >
                   {userData.profileImage ? (
@@ -277,9 +291,9 @@ const UserDashboard = () => {
                     getUserInitials()
                   )}
                 </div>
-                <div className="user-info">
-                  <div className="user-name">{displayName}</div>
-                  <div className="user-role">
+                <div className="userDashboardUserInfo">
+                  <div className="userDashboardUserName">{displayName}</div>
+                  <div className="userDashboardUserRole">
                     {userData.role === "user"
                       ? "Standard account"
                       : userData.role || "User"}
@@ -287,16 +301,16 @@ const UserDashboard = () => {
                 </div>
                 <ChevronDown size={14} color="#718096" />
                 {showProfileDropdown && (
-                  <div className="profile-dropdown show">
+                  <div className="userDashboardProfileDropdown userDashboardShow">
                     <div
-                      className="dropdown-item"
+                      className="userDashboardDropdownItem"
                       onClick={() => setActiveMenu("Profile")}
                     >
                       <User size={16} />
                       <span>Profile</span>
                     </div>
                     <div
-                      className="dropdown-item"
+                      className="userDashboardDropdownItem"
                       onClick={() => {
                         setActiveMenu("Profile");
                         SessionManager.setItem("profileActiveTab", "settings");
@@ -305,12 +319,12 @@ const UserDashboard = () => {
                       <Settings size={16} />
                       <span>Settings</span>
                     </div>
-                    <div className="dropdown-item">
+                    <div className="userDashboardDropdownItem">
                       <HelpCircle size={16} />
                       <span>Support</span>
                     </div>
                     <div
-                      className="dropdown-item logout"
+                      className="userDashboardDropdownItem userDashboardLogout"
                       onClick={handleLogout}
                     >
                       <LogOut size={16} />
@@ -325,7 +339,7 @@ const UserDashboard = () => {
           </div>
         </div>
         {/* Dashboard Content */}
-        <div className="content-wrapper">
+        <div className="userDashboardContentWrapper">
           {activeMenu === "Overview" && <UserOverview />}
           {activeMenu === "Profile" && <Profile />}
           {activeMenu === "Become a Host" && <CreateHostProfile />}

@@ -22,6 +22,9 @@ const HostProfile = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [previewImage, setPreviewImage] = useState(null);
+  const [isDeletingProfile, setIsDeletingProfile] = useState(false);
+  const [deleteCountdown, setDeleteCountdown] = useState(5);
+  const [showDeleteCountdown, setShowDeleteCountdown] = useState(false);
   
   // Host profile state
   const [profile, setProfile] = useState({
@@ -64,56 +67,75 @@ const HostProfile = () => {
 
   // Fetch host profile data
   useEffect(() => {
-    const fetchHostProfile = async () => {
-      setIsLoading(true);
-      try {
-        const hostToken = SessionManager.getHostToken() || localStorage.getItem("hostToken");
-        
-        if (!hostToken) {
-          throw new Error("No authentication token found");
-        }
-        
-        const response = await fetch("http://localhost:5000/api/hosts/profile", {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${hostToken}`
-          }
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to fetch profile");
-        }
-        
-        const data = await response.json();
-        console.log("Profile data received:", data);
-        
-        setProfile(data);
-        // Initialize editedProfile with current data
-        setEditedProfile({
-          name: data.name,
-          bio: data.bio,
-          expertise: data.expertise,
-          location: data.location,
-          experience: data.experience,
-          socialMedia: {
-            facebook: data.socialMedia?.facebook || "",
-            twitter: data.socialMedia?.twitter || "",
-            linkedin: data.socialMedia?.linkedin || "",
-            instagram: data.socialMedia?.instagram || ""
-          }
-        });
-        
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-        setError(error.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     fetchHostProfile();
   }, []);
+
+  // Delete countdown effect
+  useEffect(() => {
+    let countdownTimer;
+    
+    if (showDeleteCountdown && deleteCountdown > 0) {
+      countdownTimer = setTimeout(() => {
+        setDeleteCountdown(prevCount => prevCount - 1);
+      }, 1000);
+    } else if (showDeleteCountdown && deleteCountdown === 0) {
+      // When countdown reaches zero, finalize the deletion
+      finalizeProfileDeletion();
+    }
+    
+    return () => {
+      if (countdownTimer) clearTimeout(countdownTimer);
+    };
+  }, [showDeleteCountdown, deleteCountdown]);
+
+  // Function to fetch host profile - moved to a separate function so it can be reused
+  const fetchHostProfile = async () => {
+    setIsLoading(true);
+    try {
+      const hostToken = SessionManager.getHostToken() || localStorage.getItem("hostToken");
+      
+      if (!hostToken) {
+        throw new Error("No authentication token found");
+      }
+      
+      const response = await fetch("http://localhost:5000/api/hosts/profile", {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${hostToken}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch profile");
+      }
+      
+      const data = await response.json();
+      console.log("Profile data received:", data);
+      
+      setProfile(data);
+      // Initialize editedProfile with current data
+      setEditedProfile({
+        name: data.name,
+        bio: data.bio,
+        expertise: data.expertise,
+        location: data.location,
+        experience: data.experience,
+        socialMedia: {
+          facebook: data.socialMedia?.facebook || "",
+          twitter: data.socialMedia?.twitter || "",
+          linkedin: data.socialMedia?.linkedin || "",
+          instagram: data.socialMedia?.instagram || ""
+        }
+      });
+      
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   // Handle input changes
   const handleInputChange = (e) => {
@@ -215,10 +237,18 @@ const HostProfile = () => {
         throw new Error(errorData.message || "Failed to update profile");
       }
       
-      const updatedProfile = await response.json();
+      const updatedData = await response.json();
+      console.log("Profile updated:", updatedData);
       
       // Update profile state with new data
-      setProfile(updatedProfile);
+      if (updatedData && updatedData.host) {
+        setProfile(updatedData.host);
+      } else {
+        // Fetch the updated profile data to ensure everything is in sync
+        await fetchHostProfile();
+      }
+      
+      // Exit edit mode
       setIsEditing(false);
       setSelectedFile(null);
       setPreviewImage(null);
@@ -230,19 +260,41 @@ const HostProfile = () => {
     } catch (error) {
       console.error("Error updating profile:", error);
       setError(error.message);
+      
+      // Show error message to the user
+      alert(`Failed to update profile: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
   };
   
-  // Delete host profile
-  const deleteProfile = async () => {
+  // Start the delete profile process with countdown
+  const startDeleteProcess = () => {
+    setShowDeleteConfirm(false);
+    setShowDeleteCountdown(true);
+    setDeleteCountdown(5);
+    setIsDeletingProfile(true);
+  };
+  
+  // Cancel the deletion process
+  const cancelDeletion = () => {
+    setShowDeleteCountdown(false);
+    setDeleteCountdown(5);
+    setIsDeletingProfile(false);
+  };
+  
+  // Finalize the profile deletion after countdown
+  const finalizeProfileDeletion = async () => {
+    setIsLoading(true);
+    
     try {
       const hostToken = SessionManager.getHostToken() || localStorage.getItem("hostToken");
       
       if (!hostToken) {
         throw new Error("No authentication token found");
       }
+      
+      console.log("Finalizing profile deletion...");
       
       const response = await fetch("http://localhost:5000/api/hosts/delete-profile", {
         method: "DELETE",
@@ -252,12 +304,22 @@ const HostProfile = () => {
         }
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to delete profile");
+      // Parse the response
+      let responseData;
+      try {
+        responseData = await response.json();
+        console.log("Delete profile response:", responseData);
+      } catch (e) {
+        console.log("Delete response is not JSON, status:", response.status);
       }
       
-      // Clear storage and redirect to login
+      if (!response.ok) {
+        throw new Error(responseData?.message || `Failed to delete profile (${response.status})`);
+      }
+      
+      console.log("Profile deleted successfully");
+      
+      // Clear all storage
       SessionManager.logoutHost();
       localStorage.removeItem("hostToken");
       localStorage.removeItem("hostId");
@@ -266,11 +328,27 @@ const HostProfile = () => {
       localStorage.removeItem("gp_remember_email");
       localStorage.removeItem("hostProfileImage");
       
-      navigate("/host-login?deleted=true");
+      // Set a flag in sessionStorage to show a message on the login page
+      sessionStorage.setItem("profileDeleted", "true");
+      
+      // Add a short delay before redirect to ensure all state updates complete
+      setTimeout(() => {
+        navigate("/host-login?deleted=true");
+      }, 500);
       
     } catch (error) {
       console.error("Error deleting profile:", error);
       setError(error.message);
+      
+      // Show error message to the user
+      alert(`Failed to delete profile: ${error.message}`);
+      
+      // Reset deletion state
+      setShowDeleteCountdown(false);
+      setDeleteCountdown(5);
+      setIsDeletingProfile(false);
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -293,6 +371,7 @@ const HostProfile = () => {
     return stars;
   };
 
+  // If we're still loading the initial profile and have no data yet
   if (isLoading && !profile.name) {
     return (
       <div className="host-profile-loading">
@@ -302,6 +381,7 @@ const HostProfile = () => {
     );
   }
 
+  // If we have an error and no profile data
   if (error && !profile.name) {
     return (
       <div className="host-profile-error">
@@ -314,7 +394,7 @@ const HostProfile = () => {
 
   return (
     <div className="host-profile-container">
-      {/* Success message notification */}
+      {/* Success message notification - improved visibility */}
       {successMessage && (
         <div className="success-notification">
           <FaCheck className="success-icon" />
@@ -331,6 +411,7 @@ const HostProfile = () => {
               className="edit-button"
               onClick={toggleEditMode}
               aria-label="Edit profile"
+              disabled={isDeletingProfile}
             >
               <FaEdit /> Edit Profile
             </button>
@@ -359,6 +440,7 @@ const HostProfile = () => {
               className="delete-button"
               onClick={() => setShowDeleteConfirm(true)}
               aria-label="Delete profile"
+              disabled={isDeletingProfile || isLoading}
             >
               <FaTrashAlt /> Delete Profile
             </button>
@@ -450,7 +532,7 @@ const HostProfile = () => {
                   rows={4}
                 />
               ) : (
-                <p>{profile.bio}</p>
+                <p>{profile.bio || "No bio provided"}</p>
               )}
             </div>
             
@@ -465,7 +547,7 @@ const HostProfile = () => {
                   placeholder="Your area of expertise"
                 />
               ) : (
-                <p>{profile.expertise}</p>
+                <p>{profile.expertise || "Not specified"}</p>
               )}
             </div>
             
@@ -480,7 +562,7 @@ const HostProfile = () => {
                   placeholder="Your location"
                 />
               ) : (
-                <p>{profile.location}</p>
+                <p>{profile.location || "Not specified"}</p>
               )}
             </div>
             
@@ -495,7 +577,7 @@ const HostProfile = () => {
                   rows={3}
                 />
               ) : (
-                <p>{profile.experience}</p>
+                <p>{profile.experience || "No experience details provided"}</p>
               )}
             </div>
             
@@ -627,14 +709,39 @@ const HostProfile = () => {
               <button 
                 className="cancel-button"
                 onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeletingProfile}
               >
                 Cancel
               </button>
               <button 
                 className="confirm-delete-button"
-                onClick={deleteProfile}
+                onClick={startDeleteProcess}
+                disabled={isDeletingProfile}
               >
                 Yes, Delete My Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deletion countdown modal */}
+      {showDeleteCountdown && (
+        <div className="modal-overlay">
+          <div className="delete-countdown-modal">
+            <div className="modal-header">
+              <h3>Deleting Profile</h3>
+            </div>
+            <div className="modal-body">
+              <p className="countdown-text">Your profile will be deleted in <span className="countdown-number">{deleteCountdown}</span> seconds.</p>
+              <p>Click cancel if you've changed your mind.</p>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="cancel-deletion-button"
+                onClick={cancelDeletion}
+              >
+                Cancel Deletion
               </button>
             </div>
           </div>
@@ -645,7 +752,7 @@ const HostProfile = () => {
       {isLoading && (
         <div className="loading-overlay">
           <div className="loading-spinner"></div>
-          <p>Processing...</p>
+          <p>{isDeletingProfile ? "Deleting profile..." : "Processing..."}</p>
         </div>
       )}
     </div>

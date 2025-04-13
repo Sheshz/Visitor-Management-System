@@ -1,417 +1,1093 @@
-/* Host Directory Styles */
-.host-directory-container {
+/* ==========================================
+   General Styles & Variables
+   ========================================== */
+   :root {
+    --primary-color: #4a6fa5;
+    --primary-light: #6889bd;
+    --primary-dark: #2c4972;
+    --secondary-color: #f8a556;
+    --secondary-light: #ffbe7d;
+    --secondary-dark: #d8893a;
+    --success-color: #4caf50;
+    --danger-color: #f44336;
+    --warning-color: #ff9800;
+    --text-dark: #333;
+    --text-medium: #666;
+    --text-light: #888;
+    --background-light: #f9f9fb;
+    --background-white: #ffffff;
+    --border-color: #e0e0e0;
+    --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.05);
+    --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --border-radius-sm: 4px;
+    --border-radius: 8px;
+    --border-radius-lg: 12px;
+    --transition-speed: 0.3s;
+  }
+  
+  /* ==========================================
+     Host Directory Styles
+     ========================================== */
+  
+  /* Main Container */
+  .HostDirectoryContainer {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    position: relative;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: var(--text-dark);
+    background-color: var(--background-light);
+    min-height: 100vh;
   }
   
-  /* Create a scrollable container for the main content */
-  .host-directory-scrollable-content {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: 10px;
-    position: relative;
-  }
-  
-  /* Fixed Header Styles */
-  .directory-header {
-    position: sticky;
-    top: 0;
-    background: #fff;
-    z-index: 10;
-    padding: 20px 0;
-    margin-bottom: 30px;
+  /* Header Section */
+  .HostDirectoryHeader {
     text-align: center;
+    margin-bottom: 30px;
+    padding: 30px 20px;
+    background-color: var(--background-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-soft);
   }
   
-  .directory-header h1 {
-    margin-bottom: 20px;
-    color: #333;
+  .HostDirectoryHeader h1 {
     font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--primary-dark);
   }
   
-  /* Search Container */
-  .search-container {
-    display: flex;
-    max-width: 600px;
-    margin: 0 auto;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    border-radius: 50px;
-    overflow: hidden;
+  .HostDirectorySubheading {
+    font-size: 18px;
+    color: var(--text-medium);
+    margin-bottom: 25px;
+  }
+  
+  /* Search Bar */
+  .HostDirectorySearchContainer {
     position: relative;
+    max-width: 700px;
+    margin: 0 auto 20px;
   }
   
-  .search-input {
-    flex: 1;
-    padding: 15px 45px 15px 20px;
-    border: none;
-    font-size: 16px;
-    outline: none;
+  .HostDirectorySearchInput {
     width: 100%;
+    padding: 15px 20px 15px 50px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    transition: all var(--transition-speed);
+    box-shadow: var(--shadow-soft);
   }
   
-  .clear-search-button {
+  .HostDirectorySearchInput:focus {
+    outline: none;
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.2);
+  }
+  
+  .HostDirectorySearchIcon {
     position: absolute;
-    right: 70px;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-light);
+    font-size: 18px;
+  }
+  
+  .HostDirectoryClearSearch {
+    position: absolute;
+    right: 15px;
     top: 50%;
     transform: translateY(-50%);
     background: none;
     border: none;
-    color: #999;
-    font-size: 20px;
     cursor: pointer;
+    color: var(--text-light);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 5px;
-    line-height: 1;
-    z-index: 2;
   }
   
-  .clear-search-button:hover {
-    color: #333;
+  .HostDirectoryClearSearch:hover {
+    color: var(--danger-color);
   }
   
-  .search-button {
-    background-color: #4a90e2;
-    color: white;
-    border: none;
-    padding: 0 25px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    flex-shrink: 0;
-  }
-  
-  .search-button:hover {
-    background-color: #357abd;
-  }
-  
-  /* Notification Bar */
-  .notification-bar {
-    background-color: #fff3cd;
-    color: #856404;
-    padding: 12px 20px;
-    border-radius: 8px;
-    margin-bottom: 30px;
+  /* Categories Filter */
+  .HostDirectoryCategoriesFilter {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    animation: fadeIn 0.3s ease-in-out;
-    border-left: 4px solid #ffeeba;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
   }
   
-  .notification-bar.retrying {
-    background-color: #e8f4fd;
-    color: #0c5460;
-    border-left-color: #bee5eb;
-  }
-  
-  .notification-content {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .notification-icon {
-    font-size: 18px;
-    color: #e5a000;
-  }
-  
-  .retry-button {
-    background-color: #ffc107;
-    color: #212529;
-    border: none;
+  .HostDirectoryCategoryButton {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
     padding: 8px 16px;
-    border-radius: 4px;
+    font-size: 14px;
+    color: var(--text-medium);
     cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
+    transition: all var(--transition-speed);
+  }
+  
+  .HostDirectoryCategoryButton:hover {
+    background-color: rgba(74, 111, 165, 0.1);
+    border-color: var(--primary-light);
+    color: var(--primary-dark);
+  }
+  
+  .HostDirectoryCategoryButton.active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+  }
+  
+  /* Results Summary */
+  .HostDirectoryResultsSummary {
+    margin: 20px 0;
+    font-size: 14px;
+    color: var(--text-medium);
+  }
+  
+  /* Host Directory Grid */
+  .HostDirectoryGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  
+  /* Host Card */
+  .HostDirectoryCard {
+    background-color: var(--background-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .HostDirectoryCard:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-medium);
+  }
+  
+  .HostDirectoryCardHeader {
+    display: flex;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .HostDirectoryAvatarContainer {
+    position: relative;
+    margin-right: 15px;
+  }
+  
+  .HostDirectoryAvatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #f2f2f2;
+  }
+  
+  .HostDirectoryStatusBadge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: var(--success-color);
+    color: white;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 10px;
+  }
+  
+  .HostDirectoryCardInfo {
+    flex: 1;
+  }
+  
+  .HostDirectoryCardName {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--text-dark);
+  }
+  
+  .HostDirectoryCardTitle {
+    font-size: 14px;
+    color: var(--text-medium);
+    margin-bottom: 10px;
+  }
+  
+  .HostDirectoryCardLocation {
     display: flex;
     align-items: center;
+    font-size: 13px;
+    color: var(--text-light);
+    margin-bottom: 8px;
+  }
+  
+  .HostDirectoryLocationIcon {
+    margin-right: 5px;
+    font-size: 12px;
+  }
+  
+  .HostDirectoryCardRating {
+    display: flex;
+    align-items: center;
+  }
+  
+  .HostDirectoryStarIcon {
+    color: var(--secondary-color);
+    margin-right: 5px;
+    font-size: 14px;
+  }
+  
+  .HostDirectoryReviewCount {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-left: 5px;
+  }
+  
+  /* Card Details */
+  .HostDirectoryCardDetails {
+    padding: 15px 20px;
+    display: flex;
+    flex-direction: column;
     gap: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    font-size: 13px;
+    color: var(--text-medium);
+    border-bottom: 1px solid var(--border-color);
   }
   
-  .retry-button:hover {
-    background-color: #e0a800;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  .HostDirectoryAvailability,
+  .HostDirectorySessionLength,
+  .HostDirectoryExperience {
+    display: flex;
+    align-items: center;
   }
   
-  .retry-button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+  .HostDirectoryDetailIcon {
+    margin-right: 8px;
+    color: var(--primary-color);
+    font-size: 12px;
   }
   
-  .retry-button.retrying {
-    background-color: #6c757d;
+  /* Specialties */
+  .HostDirectoryCardSpecialties {
+    padding: 15px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .HostDirectorySpecialtyTag {
+    background-color: rgba(74, 111, 165, 0.1);
+    color: var(--primary-color);
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 12px;
+  }
+  
+  /* Card Actions */
+  .HostDirectoryCardActions {
+    padding: 15px 20px;
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+  }
+  
+  .HostDirectoryProfileButton,
+  .HostDirectoryBookButton {
+    padding: 10px;
+    border-radius: var(--border-radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-speed);
+    flex: 1;
+    border: none;
+  }
+  
+  .HostDirectoryProfileButton {
+    background-color: transparent;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+  }
+  
+  .HostDirectoryProfileButton:hover {
+    background-color: rgba(74, 111, 165, 0.1);
+  }
+  
+  .HostDirectoryBookButton {
+    background-color: var(--primary-color);
     color: white;
-    opacity: 0.85;
-    cursor: not-allowed;
   }
   
-  .retry-spinner {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: white;
-    animation: spin 1s ease-in-out infinite;
+  .HostDirectoryBookButton:hover {
+    background-color: var(--primary-dark);
   }
   
-  /* Loading states */
-  .loading-container {
+  /* No Results */
+  .HostDirectoryNoResults {
     text-align: center;
-    padding: 60px 0;
-    color: #666;
+    padding: 40px 20px;
+    background-color: var(--background-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-soft);
   }
   
-  .loading-spinner {
-    display: inline-block;
-    width: 50px;
-    height: 50px;
-    border: 3px solid rgba(74, 144, 226, 0.3);
-    border-radius: 50%;
-    border-top-color: #4a90e2;
-    animation: spin 1s ease-in-out infinite;
+  .HostDirectoryNoResultsIcon {
+    margin-bottom: 20px;
+    color: var(--text-light);
+  }
+  
+  .HostDirectoryNoResults h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-dark);
+  }
+  
+  .HostDirectoryNoResults p {
+    color: var(--text-medium);
     margin-bottom: 20px;
   }
   
-  @keyframes spin {
-    to { transform: rotate(360deg); }
+  .HostDirectoryClearFiltersButton {
+    background-color: transparent;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    padding: 10px 20px;
+    border-radius: var(--border-radius-sm);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all var(--transition-speed);
   }
   
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+  .HostDirectoryClearFiltersButton:hover {
+    background-color: rgba(74, 111, 165, 0.1);
   }
   
-  .overlay-loading {
+  /* Error States */
+  .HostDirectoryError {
+    background-color: #fdeaea;
+    border: 1px solid #f5c2c2;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .HostDirectoryErrorContent {
+    display: flex;
+    align-items: center;
+  }
+  
+  .HostDirectoryErrorIcon {
+    color: var(--danger-color);
+    font-size: 20px;
+    margin-right: 15px;
+  }
+  
+  .HostDirectoryRetryButton {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: var(--border-radius-sm);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all var(--transition-speed);
+  }
+  
+  .HostDirectoryRetryButton:hover {
+    background-color: var(--primary-dark);
+  }
+  
+  .HostDirectoryRetryButton.retrying {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  /* Loading States */
+  .HostDirectoryLoading,
+  .HostDirectoryOverlayLoading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 50px 20px;
+  }
+  
+  .HostDirectoryOverlayLoading {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(255, 255, 255, 0.7);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
-    animation: fadeIn 0.3s ease-in-out;
+    background-color: rgba(255, 255, 255, 0.9);
+    z-index: 10;
   }
   
-  /* No results */
-  .no-results {
-    text-align: center;
-    padding: 40px 0;
-    color: #666;
-    font-size: 18px;
-  }
-  
-  .clear-search-button-large {
-    background-color: #f0f0f0;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    margin-top: 15px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.2s;
-  }
-  
-  .clear-search-button-large:hover {
-    background-color: #e0e0e0;
-  }
-  
-  /* All Hosts Section */
-  .all-hosts-section {
-    margin-bottom: 40px;
-  }
-  
-  .all-hosts-section h2 {
-    font-size: 24px;
+  .HostDirectoryLoadingSpinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(74, 111, 165, 0.1);
+    border-left-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
     margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #f0f0f0;
-    color: #333;
   }
   
-  .hosts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* ==========================================
+     User Host Profile Styles
+     ========================================== */
+  
+  /* Profile Container */
+  .HostProfileContainer {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: var(--text-dark);
+  }
+  
+  /* Back Navigation */
+  .HostProfileBackNavigation {
+    margin-bottom: 20px;
+  }
+  
+  .HostProfileBackButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-medium);
+    padding: 8px 16px;
+    border-radius: var(--border-radius-sm);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all var(--transition-speed);
+  }
+  
+  .HostProfileBackButton:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--text-dark);
+  }
+  
+  /* Profile Header */
+  .HostProfileHeader {
+    background-color: var(--background-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-soft);
+    padding: 30px;
+    margin-bottom: 20px;
+  }
+  
+  .HostProfileHeaderContent {
+    display: flex;
+    flex-wrap: wrap;
     gap: 20px;
   }
   
-  /* Host Card */
-  .host-card {
-    background-color: #fff;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s, box-shadow 0.2s;
-    padding: 20px;
-  }
-  
-  .host-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  }
-  
-  .host-card-header {
-    display: flex;
-    align-items: center;
+  /* Avatar and Status */
+  .HostProfileAvatarContainer {
     position: relative;
+  }
+  
+  .HostProfileAvatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #f2f2f2;
+  }
+  
+  .HostProfileStatusBadge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: var(--success-color);
+    color: white;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 10px;
+  }
+  
+  /* Basic Info */
+  .HostProfileBasicInfo {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .HostProfileName {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: var(--text-dark);
+  }
+  
+  .HostProfileTitle {
+    font-size: 18px;
+    color: var(--text-medium);
     margin-bottom: 15px;
   }
   
-  .host-avatar {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    overflow: hidden;
-    margin-right: 15px;
-    border: 2px solid #4a90e2;
-    background-color: #e5e5e5;
-    flex-shrink: 0;
+  .HostProfileLocation {
+    display: flex;
+    align-items: center;
+    font-size: 15px;
+    color: var(--text-medium);
+    margin-bottom: 10px;
   }
   
-  .host-avatar-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  .HostProfileIcon {
+    margin-right: 8px;
+    font-size: 16px;
   }
   
-  .host-info {
-    flex: 1;
-  }
-  
-  .host-info h3 {
-    margin: 0 0 5px 0;
-    font-size: 18px;
-    color: #333;
-  }
-  
-  .host-title {
-    margin: 0 0 5px 0;
-    font-size: 14px;
-    color: #666;
-  }
-  
-  .host-location {
-    font-size: 12px;
-    color: #777;
-  }
-  
-  .host-rating {
-    position: absolute;
-    top: 0;
-    right: 0;
-    background-color: #4a90e2;
-    color: white;
-    font-size: 14px;
-    padding: 5px 10px;
-    border-radius: 15px;
-    font-weight: bold;
-  }
-  
-  .host-specialties {
+  /* Rating */
+  .HostProfileRatingContainer {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 20px;
+    gap: 15px;
+    margin-top: 10px;
   }
   
-  .specialty-tag {
-    background-color: #f0f7ff;
-    color: #4a90e2;
-    font-size: 12px;
-    padding: 5px 10px;
-    border-radius: 20px;
-  }
-  
-  .host-card-footer {
+  .HostProfileRating {
     display: flex;
+    align-items: center;
+    font-size: 16px;
+  }
+  
+  .HostProfileStarIcon {
+    color: var(--secondary-color);
+    margin-right: 5px;
+    font-size: 18px;
+  }
+  
+  .HostProfileReviewCount {
+    font-size: 14px;
+    color: var(--text-light);
+    margin-left: 5px;
+  }
+  
+  .HostProfileVerification {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: var(--success-color);
+  }
+  
+  /* Profile Actions */
+  .HostProfileActions {
+    display: flex;
+    flex-direction: column;
     gap: 10px;
-    margin-top: 15px;
+    justify-content: center;
   }
   
-  .view-profile-button {
-    flex: 1;
-    background-color: #f0f0f0;
-    border: none;
-    padding: 10px 0;
-    border-radius: 4px;
+  .HostProfileBookButton,
+  .HostProfileContactButton {
+    padding: 12px 24px;
+    border-radius: var(--border-radius-sm);
+    font-size: 15px;
     font-weight: 500;
-    color: #555;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all var(--transition-speed);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
   }
   
-  .view-profile-button:hover {
-    background-color: #e0e0e0;
+  .HostProfileBookButton {
+    background-color: var(--primary-color);
+    color: white;
   }
   
-  .book-button {
-    flex: 1;
-    background-color: #4a90e2;
+  .HostProfileBookButton:hover {
+    background-color: var(--primary-dark);
+  }
+  
+  .HostProfileContactButton {
+    background-color: transparent;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+  }
+  
+  .HostProfileContactButton:hover {
+    background-color: rgba(74, 111, 165, 0.1);
+  }
+  
+  /* Profile Tabs */
+  .HostProfileTabs {
+    display: flex;
+    overflow-x: auto;
+    margin-bottom: 20px;
+    background-color: var(--background-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .HostProfileTab {
+    padding: 15px 20px;
+    font-size: 15px;
+    font-weight: 500;
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    color: var(--text-medium);
+    transition: all var(--transition-speed);
+    white-space: nowrap;
+  }
+  
+  .HostProfileTab:hover {
+    color: var(--primary-color);
+  }
+  
+  .HostProfileTab.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+  }
+  
+  /* Profile Content */
+  .HostProfileContent {
+    background-color: var(--background-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-soft);
+    padding: 30px;
+  }
+  
+  /* About Tab */
+  .HostProfileSection {
+    margin-bottom: 30px;
+  }
+  
+  .HostProfileSectionTitle {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: var(--text-dark);
+  }
+  
+  .HostProfileBio {
+    line-height: 1.6;
+    color: var(--text-medium);
+  }
+  
+  .HostProfileSpecialties {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .HostProfileSpecialtyTag {
+    background-color: rgba(74, 111, 165, 0.1);
+    color: var(--primary-color);
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 15px;
+  }
+  
+  .HostProfileDetailsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+  }
+  
+  .HostProfileDetailCard {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background-color: var(--background-light);
+    border-radius: var(--border-radius-sm);
+  }
+  
+  .HostProfileDetailIcon {
+    margin-right: 15px;
+    color: var(--primary-color);
+    font-size: 18px;
+  }
+  
+  .HostProfileDetailContent h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  
+  .HostProfileDetailContent p {
+    font-size: 14px;
+    color: var(--text-medium);
+  }
+  
+  /* Services Tab */
+  .HostProfileServicesGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  
+  .HostProfileServiceCard {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  
+  .HostProfileServiceCard:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-soft);
+  }
+  
+  .HostProfileServiceTitle {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-dark);
+  }
+  
+  .HostProfileServiceDescription {
+    font-size: 14px;
+    color: var(--text-medium);
+    margin-bottom: 15px;
+    line-height: 1.5;
+  }
+  
+  .HostProfileServiceDetail {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: var(--text-medium);
+    margin-bottom: 10px;
+  }
+  
+  .HostProfileServiceIcon {
+    margin-right: 8px;
+    color: var(--primary-color);
+  }
+  
+  .HostProfileServicePrice {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin: 15px 0;
+  }
+  
+  .HostProfileServicePriceType {
+    font-size: 14px;
+    font-weight: normal;
+    color: var(--text-light);
+  }
+  
+  .HostProfileServiceBookButton {
+    background-color: var(--primary-color);
     color: white;
     border: none;
-    padding: 10px 0;
-    border-radius: 4px;
-    font-weight: 600;
+    padding: 10px;
+    border-radius: var(--border-radius-sm);
+    font-size: 14px;
+    width: 100%;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all var(--transition-speed);
+  }
+  
+  .HostProfileServiceBookButton:hover {
+    background-color: var(--primary-dark);
+  }
+  
+  /* Reviews Tab */
+  .HostProfileReviewsHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+  
+  .HostProfileRatingSummary {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .HostProfileRatingNumber {
+    display: flex;
+    align-items: center;
+    font-size: 24px;
+    font-weight: 600;
+  }
+  
+  .HostProfileStarIconLarge {
+    color: var(--secondary-color);
+    margin-right: 8px;
+    font-size: 28px;
+  }
+  
+  .HostProfileRatingText {
+    font-size: 14px;
+    color: var(--text-medium);
+  }
+  
+  .HostProfileReviewsList {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .HostProfileReviewCard {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+  }
+  
+  .HostProfileReviewHeader {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .HostProfileReviewerInfo {
+    display: flex;
+    align-items: center;
+  }
+  
+  .HostProfileReviewerAvatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+  }
+  
+  .HostProfileReviewerName {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  
+  .HostProfileReviewDate {
+    font-size: 13px;
+    color: var(--text-light);
+  }
+  
+  .HostProfileReviewRating {
+    display: flex;
+    align-items: center;
+  }
+  
+  .HostProfileReviewStar {
+    font-size: 16px;
+    margin-right: 3px;
+  }
+  
+  .HostProfileReviewStar.filled {
+    color: var(--secondary-color);
+  }
+  
+  .HostProfileReviewStar.empty {
+    color: var(--border-color);
+  }
+  
+  .HostProfileReviewContent {
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    color: var(--text-medium);
+  }
+  
+  .HostProfileReviewReply {
+    background-color: var(--background-light);
+    padding: 15px;
+    border-radius: var(--border-radius-sm);
+    margin-top: 10px;
+  }
+  
+  .HostProfileReplyHeader {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--text-dark);
+  }
+  
+  .HostProfileReplyContent {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-medium);
+  }
+  
+  /* Availability Tab */
+  .HostProfileCalendarContainer {
+    margin-bottom: 30px;
+  }
+  
+  .HostProfileCalendarPlaceholder {
     text-align: center;
+    padding: 50px 20px;
+    background-color: var(--background-light);
+    border-radius: var(--border-radius);
+    color: var(--text-medium);
   }
   
-  .book-button:hover {
-    background-color: #357abd;
+  .HostProfileAvailabilityMessage {
+    text-align: center;
+    margin: 30px 0;
   }
   
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .hosts-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .host-card-footer {
-      flex-direction: column;
-    }
-    
-    .directory-header h1 {
-      font-size: 24px;
-    }
-    
-    .search-input {
-      padding: 12px 40px 12px 15px;
-    }
-    
-    .notification-bar {
-      flex-direction: column;
-      text-align: center;
-    }
-    
-    .notification-content {
-      margin-bottom: 10px;
-      justify-content: center;
-    }
-    
-    .retry-button {
-      width: 100%;
-      justify-content: center;
-      margin-top: 10px;
-    }
+  .HostProfileAvailabilityNotes {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: var(--background-light);
+    border-radius: var(--border-radius-sm);
   }
   
-  /* Make sure the host directory takes full height when in app */
-  html, body, #root, .app {
-    height: 100%;
+  .HostProfileAvailabilityNotes h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  
+  /* Feedback Tab */
+  .HostProfileFeedbackSection {
+    margin-bottom: 30px;
+  }
+  
+  .HostProfileFeedbackList {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .HostProfileFeedbackItem {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: 15px;
+  }
+  
+  .HostProfileFeedbackHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .HostProfileFeedbackType {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+    font-size: 14px;
+  }
+  
+  .HostProfileFeedbackType.positive {
+    color: var(--success-color);
+  }
+  
+  .HostProfileFeedbackType.negative {
+    color: var(--danger-color);
+  }
+  
+  .HostProfileFeedbackDate {
+    font-size: 13px;
+    color: var(--text-light);
+  }
+  
+  .HostProfileFeedbackContent {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-medium);
+  }
+  
+  .HostProfileFeedbackActions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .HostProfileFeedbackButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--border-radius-sm);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all var(--transition-speed);
+  }
+  
+  .HostProfileFeedbackButton:hover {
+    background-color: var(--primary-dark);
+  }
+  
+  .HostProfileFeedbackForm {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: var(--background-light);
+    border-radius: var(--border-radius);
+  }
+  
+  .HostProfileFeedbackForm h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+  
+  .HostProfileFeedbackForm p {
+    font-size: 14px;
+    color: var(--text-medium);
+    margin-bottom: 15px;
+  }
+  
+  .HostProfileFeedbackTextarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    resize: vertical;
+    font-family: inherit;
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+  
+  .HostProfileFeedbackTextarea:focus {
+    outline: none;
+    border-color: var(--primary-light);
+  }
+  
+  .HostProfileFeedbackFormActions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .HostProfileFeedbackPositiveButton,
+  .HostProfileFeedbackNegativeButton,
+  .HostProfileFeedbackCancelButton {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 10
   }

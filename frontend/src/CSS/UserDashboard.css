@@ -1,5 +1,5 @@
 /* Main Dashboard Layout */
-.dashboard-container {
+.userDashboardContainer {
   display: flex;
   height: 100vh;
   background-color: #f5f7fa;
@@ -8,8 +8,8 @@
 }
 
 /* Loading and Error states */
-.loading,
-.error-message {
+.userDashboardLoading,
+.userDashboardErrorMessage {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -19,12 +19,43 @@
   color: #4a5568;
 }
 
-.error-message {
+.userDashboardErrorMessage {
   color: #e53e3e;
 }
 
+.userDashboardErrorContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  gap: 16px;
+}
+
+.userDashboardRetryButton,
+.userDashboardLogoutButton {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.userDashboardRetryButton {
+  background-color: #5541d9;
+  color: white;
+  border: none;
+}
+
+.userDashboardLogoutButton {
+  background-color: transparent;
+  color: #4a5568;
+  border: 1px solid #e2e8f0;
+}
+
 /* Sidebar Styles */
-.sidebar {
+.userDashboardSidebar {
   background-color: #ffffff;
   height: 100%;
   width: 250px;
@@ -33,11 +64,11 @@
   overflow: hidden;
 }
 
-.sidebar.collapsed {
+.userDashboardSidebar.userDashboardCollapsed {
   width: 70px;
 }
 
-.logo-container {
+.userDashboardLogoContainer {
   padding: 20px;
   display: flex;
   align-items: center;
@@ -45,12 +76,12 @@
   border-bottom: 1px solid #f0f0f0;
 }
 
-.logo-wrapper {
+.userDashboardLogoWrapper {
   display: flex;
   align-items: center;
 }
 
-.logo {
+.userDashboardLogo {
   background-color: #5541d9;
   color: white;
   width: 36px;
@@ -63,35 +94,35 @@
   font-size: 16px;
 }
 
-.logo-text {
+.userDashboardLogoText {
   margin-left: 12px;
   font-weight: 600;
   font-size: 16px;
   color: #2d3748;
 }
 
-.collapse-btn {
+.userDashboardCollapseBtn {
   background: none;
   border: none;
   color: #718096;
   cursor: pointer;
 }
 
-.expand-btn-container {
+.userDashboardExpandBtnContainer {
   display: flex;
   justify-content: center;
   margin-top: 20px;
   margin-bottom: 20px;
 }
 
-.expand-btn {
+.userDashboardExpandBtn {
   background: none;
   border: none;
   color: #718096;
   cursor: pointer;
 }
 
-.menu-container {
+.userDashboardMenuContainer {
   margin-top: 24px;
   max-height: calc(100vh - 100px); /* Account for logo and padding */
   overflow-y: auto;
@@ -99,7 +130,7 @@
   flex-direction: column;
 }
 
-.menu-item {
+.userDashboardMenuItem {
   display: flex;
   align-items: center;
   padding: 12px 20px;
@@ -107,37 +138,37 @@
   transition: all 0.2s ease;
 }
 
-.menu-item:hover {
+.userDashboardMenuItem:hover {
   background-color: #f7fafc;
 }
 
-.menu-item.active {
+.userDashboardMenuItem.userDashboardActive {
   border-left: 4px solid #5541d9;
   background-color: #f0f3ff;
 }
 
-.icon {
+.userDashboardIcon {
   color: #718096;
   margin-right: 12px;
 }
 
-.icon-centered {
+.userDashboardIconCentered {
   color: #718096;
   margin: 0 auto;
 }
 
-.menu-text {
+.userDashboardMenuText {
   color: #4a5568;
   font-size: 14px;
 }
 
 /* Main Content Styles */
-.main-content {
+.userDashboardMainContent {
   flex: 1;
   overflow: auto;
 }
 
-.header {
+.userDashboardHeader {
   background-color: #ffffff;
   padding: 16px 24px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
@@ -149,24 +180,24 @@
   z-index: 10;
 }
 
-.header-title {
+.userDashboardHeaderTitle {
   font-size: 18px;
   font-weight: 600;
   color: #2d3748;
 }
 
-.user-section {
+.userDashboardUserSection {
   display: flex;
   align-items: center;
   gap: 16px;
 }
 
-.mail-icon {
+.userDashboardMailIcon {
   color: #718096;
 }
 
 /* Notification Styles */
-.notification-icon {
+.userDashboardNotificationIcon {
   position: relative;
   cursor: pointer;
   padding: 8px;
@@ -174,11 +205,11 @@
   transition: background-color 0.2s;
 }
 
-.notification-icon:hover {
+.userDashboardNotificationIcon:hover {
   background-color: #f0f3ff;
 }
 
-.notification-dot {
+.userDashboardNotificationDot {
   position: absolute;
   top: 4px;
   right: 4px;
@@ -188,14 +219,14 @@
   border-radius: 50%;
 }
 
-.notifications-container {
+.userDashboardNotificationsContainer {
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   padding: 24px;
 }
 
-.empty-notifications {
+.userDashboardEmptyNotifications {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -204,13 +235,13 @@
   color: #718096;
 }
 
-.notification-list {
+.userDashboardNotificationList {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.notification-item {
+.userDashboardNotificationItem {
   display: flex;
   justify-content: space-between;
   padding: 16px;
@@ -219,39 +250,39 @@
   transition: all 0.2s;
 }
 
-.notification-item.unread {
+.userDashboardNotificationItem.userDashboardUnread {
   background-color: #eef2ff;
 }
 
-.notification-content h4 {
+.userDashboardNotificationContent h4 {
   margin: 0 0 8px 0;
   color: #2d3748;
 }
 
-.notification-content p {
+.userDashboardNotificationContent p {
   margin: 0 0 8px 0;
   color: #4a5568;
 }
 
-.notification-time {
+.userDashboardNotificationTime {
   font-size: 12px;
   color: #718096;
 }
 
-.unread-indicator {
+.userDashboardUnreadIndicator {
   width: 10px;
   height: 10px;
   border-radius: 50%;
   background-color: #5541d9;
 }
 
-.user-profile {
+.userDashboardUserProfile {
   display: flex;
   align-items: center;
 }
 
 /* Make avatar smaller */
-.avatar {
+.userDashboardAvatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -266,7 +297,7 @@
 }
 
 /* Profile dropdown container */
-.user-profile {
+.userDashboardUserProfile {
   position: relative;
   display: flex;
   align-items: center;
@@ -277,12 +308,12 @@
   transition: background-color 0.2s;
 }
 
-.user-profile:hover {
+.userDashboardUserProfile:hover {
   background-color: #f0f3ff;
 }
 
 /* Profile dropdown menu */
-.profile-dropdown {
+.userDashboardProfileDropdown {
   position: absolute;
   top: 100%;
   right: 0;
@@ -296,11 +327,11 @@
   display: none; /* Hidden by default */
 }
 
-.profile-dropdown.show {
+.userDashboardProfileDropdown.userDashboardShow {
   display: block; /* Show when active */
 }
 
-.dropdown-item {
+.userDashboardDropdownItem {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -310,33 +341,33 @@
   transition: background-color 0.2s;
 }
 
-.dropdown-item:hover {
+.userDashboardDropdownItem:hover {
   background-color: #f7fafc;
 }
 
-.dropdown-item.logout {
+.userDashboardDropdownItem.userDashboardLogout {
   border-top: 1px solid #edf2f7;
   color: #e53e3e;
 }
 
 /* Make user info text smaller */
-.user-info {
+.userDashboardUserInfo {
   margin-left: 3px;
 }
 
-.user-name {
+.userDashboardUserName {
   font-size: 12px;
   font-weight: 500;
   color: #2d3748;
 }
 
-.user-role {
+.userDashboardUserRole {
   font-size: 10px;
   color: #718096;
 }
 
 /* Notification icon style */
-.notification-icon {
+.userDashboardNotificationIcon {
   position: relative;
   cursor: pointer;
   padding: 6px;
@@ -344,86 +375,86 @@
   transition: background-color 0.2s;
 }
 
-.notification-icon:hover {
+.userDashboardNotificationIcon:hover {
   background-color: #f0f3ff;
 }
 
 /* Content Area Styles */
-.content-wrapper {
+.userDashboardContentWrapper {
   padding: 24px;
 }
 
-.visitor-card {
+.userDashboardVisitorCard {
   background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   padding: 24px;
 }
 
-.visitor-header {
+.userDashboardVisitorHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 32px;
 }
 
-.visitor-title {
+.userDashboardVisitorTitle {
   font-size: 20px;
   font-weight: 600;
   color: #2d3748;
 }
 
-.visitor-id {
+.userDashboardVisitorId {
   color: #718096;
   font-weight: 500;
 }
 
-.visitor-id-top {
+.userDashboardVisitorIdTop {
   color: #718096;
   font-size: 14px;
 }
 
-.visitor-details {
+.userDashboardVisitorDetails {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
-.detail-row {
+.userDashboardDetailRow {
   display: flex;
   align-items: center;
   padding-bottom: 18px;
   border-bottom: 1px solid #edf2f7;
 }
 
-.detail-row.last {
+.userDashboardDetailRow.userDashboardLast {
   border-bottom: none;
   padding-bottom: 0;
 }
 
-.detail-icon {
+.userDashboardDetailIcon {
   color: #718096;
   margin-right: 16px;
 }
 
-.detail-label {
+.userDashboardDetailLabel {
   width: 150px;
   font-weight: 500;
   color: #4a5568;
 }
 
-.detail-value {
+.userDashboardDetailValue {
   color: #2d3748;
 }
 
 /* My Visitation styles */
-.my-visitation-container {
+.userDashboardMyVisitationContainer {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-.visitation-card {
+.userDashboardVisitationCard {
   background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -431,11 +462,11 @@
   transition: transform 0.2s;
 }
 
-.visitation-card:hover {
+.userDashboardVisitationCard:hover {
   transform: translateY(-2px);
 }
 
-.visitation-header {
+.userDashboardVisitationHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -444,58 +475,58 @@
   margin-bottom: 16px;
 }
 
-.visitation-title {
+.userDashboardVisitationTitle {
   font-size: 16px;
   font-weight: 600;
   color: #2d3748;
 }
 
-.visitation-status {
+.userDashboardVisitationStatus {
   font-size: 12px;
   padding: 4px 10px;
   border-radius: 20px;
   font-weight: 500;
 }
 
-.status-upcoming {
+.userDashboardStatusUpcoming {
   background-color: #ebf8ff;
   color: #3182ce;
 }
 
-.status-completed {
+.userDashboardStatusCompleted {
   background-color: #f0fff4;
   color: #38a169;
 }
 
-.status-cancelled {
+.userDashboardStatusCancelled {
   background-color: #fff5f5;
   color: #e53e3e;
 }
 
-.visitation-info {
+.userDashboardVisitationInfo {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
 }
 
-.visitation-detail {
+.userDashboardVisitationDetail {
   display: flex;
   flex-direction: column;
 }
 
-.detail-name {
+.userDashboardDetailName {
   font-size: 12px;
   color: #718096;
   margin-bottom: 4px;
 }
 
-.detail-content {
+.userDashboardDetailContent {
   font-size: 14px;
   color: #2d3748;
   font-weight: 500;
 }
 
-.visitation-actions {
+.userDashboardVisitationActions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -504,7 +535,7 @@
   border-top: 1px solid #edf2f7;
 }
 
-.action-btn {
+.userDashboardActionBtn {
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 13px;
@@ -513,27 +544,27 @@
   transition: all 0.2s;
 }
 
-.primary-btn {
+.userDashboardPrimaryBtn {
   background-color: #5541d9;
   color: white;
   border: none;
 }
 
-.primary-btn:hover {
+.userDashboardPrimaryBtn:hover {
   background-color: #4835c4;
 }
 
-.secondary-btn {
+.userDashboardSecondaryBtn {
   background-color: transparent;
   color: #4a5568;
   border: 1px solid #e2e8f0;
 }
 
-.secondary-btn:hover {
+.userDashboardSecondaryBtn:hover {
   background-color: #f7fafc;
 }
 
-.visitation-empty {
+.userDashboardVisitationEmpty {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -542,19 +573,19 @@
   text-align: center;
 }
 
-.empty-icon {
+.userDashboardEmptyIcon {
   color: #cbd5e0;
   margin-bottom: 16px;
 }
 
-.empty-title {
+.userDashboardEmptyTitle {
   font-size: 18px;
   font-weight: 600;
   color: #4a5568;
   margin-bottom: 8px;
 }
 
-.empty-description {
+.userDashboardEmptyDescription {
   color: #718096;
   max-width: 400px;
   margin-bottom: 24px;
@@ -562,7 +593,7 @@
 
 /* Responsive styles */
 @media (max-width: 768px) {
-  .sidebar {
+  .userDashboardSidebar {
     background-color: #ffffff;
     height: 100%;
     width: 250px;
@@ -573,37 +604,37 @@
     flex-direction: column;
   }
 
-  .sidebar:not(.collapsed) {
+  .userDashboardSidebar:not(.userDashboardCollapsed) {
     position: fixed;
     z-index: 100;
     width: 250px;
   }
 
-  .detail-row {
+  .userDashboardDetailRow {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
 
-  .detail-label {
+  .userDashboardDetailLabel {
     width: 100%;
   }
 
-  .visitor-header {
+  .userDashboardVisitorHeader {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
 
-  .visitation-info {
+  .userDashboardVisitationInfo {
     grid-template-columns: 1fr;
   }
 
-  .visitation-actions {
+  .userDashboardVisitationActions {
     flex-direction: column;
   }
 
-  .action-btn {
+  .userDashboardActionBtn {
     width: 100%;
     text-align: center;
   }

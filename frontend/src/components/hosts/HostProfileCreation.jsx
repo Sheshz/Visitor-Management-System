@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from "react";
 import "../../CSS/HostProfileCreation.css";
+import { SessionManager } from "../../utils/SessionManager";
 
-const HostProfileCreation = ({ user }) => {
-  // Initialize form state with user data if available
+const CreateHostProfile = () => {
+  // Get user data from SessionManager
+  const [userData, setUserData] = useState(null);
+  
+  // Initialize form state
   const [formData, setFormData] = useState({
-    name:
-      user?.firstName && user?.lastName
-        ? `${user.firstName} ${user.lastName}`
-        : "",
-    email: user?.email || "",
-    username: user?.username || "",
+    name: "",
+    firstName: "",
+    lastName: "",
+    email: "",
+    username: "",
     password: "",
     confirmPassword: "",
     bio: "",
@@ -29,21 +32,50 @@ const HostProfileCreation = ({ user }) => {
   const [message, setMessage] = useState({ text: "", type: "" });
   const [passwordError, setPasswordError] = useState("");
   const [previewAvatar, setPreviewAvatar] = useState("");
+  
+  // New states for password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // New state for success modal
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [hostData, setHostData] = useState({
+    hostId: "",
+    email: ""
+  });
 
-  // Update form if user data changes
+  // Fetch user data from SessionManager on component mount
   useEffect(() => {
-    if (user) {
-      setFormData((prevData) => ({
-        ...prevData,
-        name:
-          user.firstName && user.lastName
-            ? `${user.firstName} ${user.lastName}`
-            : prevData.name,
-        email: user.email || prevData.email,
-        username: user.username || prevData.username,
-      }));
-    }
-  }, [user]);
+    // Get user data from SessionManager
+    const firstName = SessionManager.getItem("userFirstName");
+    const lastName = SessionManager.getItem("userLastName");
+    const email = SessionManager.getItem("userEmail");
+    const username = SessionManager.getItem("username");
+    const fullName = SessionManager.getItem("userName");
+    
+    // Create user object from session data
+    const user = {
+      firstName: firstName || "",
+      lastName: lastName || "",
+      email: email || "",
+      username: username || "",
+      name: fullName || ""
+    };
+    
+    setUserData(user);
+    
+    // Pre-populate form with user data
+    setFormData(prevData => ({
+      ...prevData,
+      name: (user.firstName && user.lastName) 
+            ? `${user.firstName} ${user.lastName}` 
+            : user.name || "",
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      email: user.email || "",
+      username: user.username || ""
+    }));
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -96,6 +128,14 @@ const HostProfileCreation = ({ user }) => {
     return true;
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -108,8 +148,8 @@ const HostProfileCreation = ({ user }) => {
     setMessage({ text: "", type: "" });
 
     try {
-      // Get auth token from localStorage or wherever you store it
-      const token = localStorage.getItem("token");
+      // Get auth token from SessionManager
+      const token = SessionManager.getToken();
 
       if (!token) {
         throw new Error("Authentication required. Please log in first.");
@@ -137,11 +177,9 @@ const HostProfileCreation = ({ user }) => {
       }
 
       // Make API call with proper authentication
-      const response = await fetch("http://localhost:5000/api/hosts/create", {
+      const response = await fetch("http://localhost:5000/api/hosts/create-profile", {
         method: "POST",
         headers: {
-          // Don't set Content-Type when using FormData
-          // Content-Type will be set automatically with proper boundary
           Authorization: `Bearer ${token}`,
         },
         body: formDataToSend,
@@ -164,6 +202,15 @@ const HostProfileCreation = ({ user }) => {
         text: "Host profile created successfully!",
         type: "success",
       });
+
+      // Set host data for success modal
+      setHostData({
+        hostId: data.hostId || "H-" + Math.floor(10000 + Math.random() * 90000), // Fallback if API doesn't return hostId
+        email: formData.email
+      });
+
+      // Show success modal
+      setShowSuccessModal(true);
     } catch (error) {
       console.error("Error submitting form:", error);
       setMessage({
@@ -175,6 +222,10 @@ const HostProfileCreation = ({ user }) => {
     }
   };
 
+  const closeSuccessModal = () => {
+    setShowSuccessModal(false);
+  };
+
   return (
     <div className="host-profile-container">
       <div className="profile-header">
@@ -184,6 +235,36 @@ const HostProfileCreation = ({ user }) => {
 
       {message.text && (
         <div className={`message ${message.type}`}>{message.text}</div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="success-modal-overlay">
+          <div className="success-modal">
+            <div className="success-icon">✓</div>
+            <h2>Profile Created Successfully!</h2>
+            <p>Your host profile has been created. Here are your details:</p>
+            <div className="host-details">
+              <div className="host-detail-item">
+                <span className="detail-label">Host ID:</span>
+                <span className="detail-value">{hostData.hostId}</span>
+              </div>
+              <div className="host-detail-item">
+                <span className="detail-label">Email:</span>
+                <span className="detail-value">{hostData.email}</span>
+              </div>
+            </div>
+            <p className="success-note">We've sent these details to your email address.</p>
+            <div className="modal-actions">
+              <button className="btn-primary" onClick={() => window.location.href="/host-login"}>
+                Go to Host Login
+              </button>
+              <button className="btn-secondary" onClick={closeSuccessModal}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="profile-form">
@@ -234,12 +315,12 @@ const HostProfileCreation = ({ user }) => {
                 value={formData.name}
                 onChange={handleChange}
                 required
-                disabled={user?.firstName && user?.lastName}
+                disabled={userData?.firstName && userData?.lastName}
                 className={
-                  user?.firstName && user?.lastName ? "input-disabled" : ""
+                  userData?.firstName && userData?.lastName ? "input-disabled" : ""
                 }
               />
-              {user?.firstName && user?.lastName && (
+              {userData?.firstName && userData?.lastName && (
                 <p className="hint-text">Imported from your user profile</p>
               )}
             </div>
@@ -253,10 +334,10 @@ const HostProfileCreation = ({ user }) => {
                 value={formData.username}
                 onChange={handleChange}
                 required
-                disabled={user?.username}
-                className={user?.username ? "input-disabled" : ""}
+                disabled={userData?.username}
+                className={userData?.username ? "input-disabled" : ""}
               />
-              {user?.username && (
+              {userData?.username && (
                 <p className="hint-text">Imported from your user profile</p>
               )}
             </div>
@@ -271,37 +352,55 @@ const HostProfileCreation = ({ user }) => {
               value={formData.email}
               onChange={handleChange}
               required
-              disabled={user?.email}
-              className={user?.email ? "input-disabled" : ""}
+              disabled={userData?.email}
+              className={userData?.email ? "input-disabled" : ""}
             />
-            {user?.email && (
+            {userData?.email && (
               <p className="hint-text">Imported from your user profile</p>
             )}
           </div>
 
           <div className="form-row">
-            <div className="form-group">
+            <div className="form-group password-group">
               <label htmlFor="password">Password</label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Create a password"
-              />
+              <div className="password-input-container">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Create a password"
+                />
+                <button 
+                  type="button" 
+                  className="password-toggle-btn"
+                  onClick={togglePasswordVisibility}
+                >
+                  <i className={`password-icon ${showPassword ? "eye-slash" : "eye"}`}></i>
+                </button>
+              </div>
             </div>
 
-            <div className="form-group">
+            <div className="form-group password-group">
               <label htmlFor="confirmPassword">Confirm Password</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Repeat your password"
-              />
+              <div className="password-input-container">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Repeat your password"
+                />
+                <button 
+                  type="button" 
+                  className="password-toggle-btn"
+                  onClick={toggleConfirmPasswordVisibility}
+                >
+                  <i className={`password-icon ${showConfirmPassword ? "eye-slash" : "eye"}`}></i>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -447,4 +546,4 @@ const HostProfileCreation = ({ user }) => {
   );
 };
 
-export default HostProfileCreation;
+export default CreateHostProfile;

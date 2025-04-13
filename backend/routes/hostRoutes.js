@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const Host = require('../models/Host');
+const User = require('../models/User');
+const fs = require('fs');
+const path = require('path');
 const { 
   loginHost, 
   createHostProfile, 
