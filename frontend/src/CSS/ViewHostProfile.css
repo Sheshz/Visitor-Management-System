@@ -1,0 +1,510 @@
+/* ViewHostProfile.css */
+.view-host-profile-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    font-family: 'Open Sans', sans-serif;
+    background-color: #f8f9fb;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Navigation */
+  .profile-navigation {
+    display: flex;
+    margin-bottom: 2rem;
+  }
+  
+  .back-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: transparent;
+    border: none;
+    color: #4a6cf7;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    transition: color 0.2s;
+  }
+  
+  .back-button:hover {
+    color: #2247d3;
+  }
+  
+  /* Profile Header */
+  .host-profile-header {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    background-color: white;
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+  
+  .host-avatar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .host-avatar {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    border: 4px solid white;
+  }
+  
+  .host-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .default-avatar {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #4a6cf7;
+    color: white;
+    font-size: 4rem;
+    font-weight: bold;
+  }
+  
+  .default-avatar.small {
+    width: 40px;
+    height: 40px;
+    font-size: 1.25rem;
+  }
+  
+  .status-indicator {
+    padding: 0.25rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+  }
+  
+  .status-indicator.active {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .status-indicator.inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  .host-info-header {
+    flex: 1;
+  }
+  
+  .host-info-header h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+    color: #333;
+  }
+  
+  .host-location {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    color: #666;
+    font-size: 1rem;
+  }
+  
+  .host-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .star-icon {
+    color: #ffc107;
+  }
+  
+  .review-count {
+    color: #777;
+    font-size: 0.9rem;
+  }
+  
+  .host-tags {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .expertise-tag, .experience-tag {
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  
+  .expertise-tag {
+    background-color: #e6f7ff;
+    color: #096dd9;
+  }
+  
+  .experience-tag {
+    background-color: #f6ffed;
+    color: #52c41a;
+  }
+  
+  .host-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  .request-meeting-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #4a6cf7;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .request-meeting-btn:hover {
+    background-color: #2247d3;
+  }
+  
+  .view-reviews-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #4a6cf7;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+  
+  .view-reviews-link:hover {
+    color: #2247d3;
+    text-decoration: underline;
+  }
+  
+  /* Profile Content */
+  .host-profile-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .host-profile-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    background-color: white;
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+  
+  .host-bio-section,
+  .host-details-section,
+  .host-social-section {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 2rem;
+  }
+  
+  .host-social-section {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  
+  .host-profile-main h2 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    color: #333;
+  }
+  
+  .host-profile-main p {
+    margin: 0;
+    color: #555;
+    line-height: 1.6;
+  }
+  
+  /* FIXED SOCIAL LINKS SECTION */
+  .host-social-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+  
+  .social-link-container {
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .social-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  .social-icon {
+    font-size: 1.2rem;
+  }
+  
+  .social-text {
+    display: inline;
+  }
+  
+  .social-link.linkedin {
+    background-color: #e8f1fd;
+    color: #0077b5;
+  }
+  
+  .social-link.twitter {
+    background-color: #e8f5fd;
+    color: #1da1f2;
+  }
+  
+  .social-link.facebook {
+    background-color: #e8eefa;
+    color: #3b5998;
+  }
+  
+  .social-link.instagram {
+    background-color: #fce8f3;
+    color: #e1306c;
+  }
+  
+  .social-link.email {
+    background-color: #f0f0f0;
+    color: #555;
+  }
+  
+  /* Reviews Section - Emphasized */
+  .host-reviews-section {
+    background-color: white;
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    border-left: 5px solid #4a6cf7;
+    margin-top: 1rem;
+    scroll-margin-top: 2rem;
+  }
+  
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    color: #4a6cf7;
+  }
+  
+  .section-icon {
+    font-size: 1.5rem;
+  }
+  
+  .section-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+  
+  .comments-loading {
+    text-align: center;
+    padding: 2rem 0;
+    color: #777;
+  }
+  
+  .comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .comment-card {
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .comment-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  .comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .commenter-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .commenter-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+  }
+  
+  .commenter-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .commenter-name {
+    font-weight: 600;
+    color: #444;
+  }
+  
+  .comment-rating {
+    display: flex;
+    gap: 0.25rem;
+    font-size: 1.2rem;
+  }
+  
+  .comment-rating .star {
+    color: #ddd;
+  }
+  
+  .comment-rating .star.filled {
+    color: #ffc107;
+  }
+  
+  .comment-content {
+    margin-bottom: 1rem;
+  }
+  
+  .comment-content p {
+    margin: 0;
+    line-height: 1.5;
+    color: #555;
+  }
+  
+  .comment-date {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #888;
+    font-size: 0.85rem;
+  }
+  
+  .date-icon {
+    font-size: 1rem;
+  }
+  
+  .no-comments {
+    text-align: center;
+    padding: 2rem 0;
+    color: #777;
+  }
+  
+  .no-comments p {
+    margin: 0.25rem 0;
+  }
+  
+  /* Loading State */
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    text-align: center;
+    color: #666;
+  }
+  
+  .loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(74, 108, 247, 0.2);
+    border-radius: 50%;
+    border-top-color: #4a6cf7;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* Error State */
+  .error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    text-align: center;
+  }
+  
+  .error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 1rem 2rem;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .view-host-profile-container {
+      padding: 1rem;
+    }
+    
+    .host-profile-header {
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      text-align: center;
+    }
+    
+    .host-info-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .host-actions {
+      flex-direction: column;
+      width: 100%;
+    }
+    
+    .request-meeting-btn {
+      width: 100%;
+      justify-content: center;
+    }
+    
+    /* Make sure social links still have proper spacing on mobile */
+    .host-social-links {
+      justify-content: center;
+    }
+  }

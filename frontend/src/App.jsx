@@ -11,7 +11,6 @@ import RegisterPage from "./pages/Register";
 import HostDashboard from "./components/HostDashboard";
 import UserDashboard from "./components/UserDashboard";
 import HostLogin from "./components/hosts/HostLogin";
-import HostProfile from "./pages/HostProfile";
 import ExpertsPage from "./pages/ExpertsPage";
 import AboutUsPage from "./pages/AboutUsPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -22,6 +21,8 @@ import HostRegistrationFlow from "./components/hosts/HostRegistrationFlow";
 import TokenRefreshHandler from "./components/TokenRefreshHandler";
 import ProtectedRoute from "./components/ProtectedRoute";
 import LogoutHandler from "./components/LogoutHandler";
+import HostProfile from "./components/hosts/HostProfile";
+import ViewHostProfile from "./components/hosts/ViewHostProfile";
 
 function App() {
   const userService = new UserService();
@@ -55,6 +56,8 @@ function App() {
           <Route path="/become-host" element={<HostRegistrationFlow />} />
           <Route path="/host/register" element={<HostRegistrationFlow />} />
 
+
+
           {/* Logout routes */}
           <Route 
             path="/logout" 
@@ -77,7 +80,7 @@ function App() {
 
           {/* Protected host routes - require host authentication */}
           <Route
-            path="/host-dashboard"
+            path="/host-dashboard/*"
             element={
               <ProtectedRoute requireHost={true}>
                 <HostDashboard />
@@ -85,14 +88,6 @@ function App() {
             }
           />
 
-          <Route
-            path="/host-profile"
-            element={
-              <ProtectedRoute requireHost={true}>
-                <HostProfile />
-              </ProtectedRoute>
-            }
-          />
 
           {/* Other public routes */}
           <Route path="/experts" element={<ExpertsPage />} />

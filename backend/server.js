@@ -16,6 +16,9 @@ const statisticsRoutes = require("./routes/statisticsRoutes");
 const notificationRoutes = require('./routes/notificationRoutes');
 //const authRoutes = require("./routes/authRoutes"); // New auth routes import
 
+// Import the status scheduler
+const { scheduleStatusUpdates } = require('./utils/statusScheduler');
+
 // Load environment variables
 dotenv.config();
 
@@ -85,6 +88,9 @@ app.use((err, req, res, next) => {
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`CORS enabled for origin: http://localhost:5173`);
+  
+  // Initialize the host status scheduler
+  scheduleStatusUpdates();
 });
 
 // Handle unhandled promise rejections

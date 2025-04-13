@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken'); // Add this import
-const Host = require('../models/Host'); // Add this import
+const jwt = require('jsonwebtoken');
+const Host = require('../models/Host');
 const { 
   loginHost, 
   createHostProfile, 
@@ -9,9 +9,10 @@ const {
   getAvailableHosts, 
   updateHostProfile, 
   getHostById,
-  getHostDetails
+  getHostDetails,
+  updateHostActiveStatus
 } = require('../controllers/hostController');
-const { verifyUserToken, auth } = require('../middleware/userMiddleware');
+const { auth } = require('../middleware/userMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 
 // Validate host token endpoint
@@ -26,7 +27,7 @@ router.post("/validate-token", async (req, res) => {
     const token = authHeader.split(" ")[1];
     
     // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || require('../config/default').jwtSecret);
     
     // Check if token belongs to a host
     if (!decoded.isHost) {
@@ -38,7 +39,7 @@ router.post("/validate-token", async (req, res) => {
     }
     
     // Check if host still exists in database
-    const host = await Host.findOne({ hostID: decoded.hostId });
+    const host = await Host.findOne({ user: decoded.id });
     if (!host) {
       return res.status(404).json({ 
         valid: false, 
@@ -50,7 +51,7 @@ router.post("/validate-token", async (req, res) => {
     return res.status(200).json({
       valid: true,
       role: "host",
-      hostId: decoded.hostId,
+      hostId: host.hostID,
       name: host.name
     });
   } catch (error) {
@@ -80,7 +81,7 @@ router.post("/validate-token", async (req, res) => {
 
 // Host authentication routes
 router.post('/login', loginHost);
-router.post('/loginHost', loginHost); // Add this route to match frontend's expectations
+router.post('/loginHost', loginHost);
 
 // Host profile routes
 router.post('/create-profile', auth, upload.single('avatar'), createHostProfile);
@@ -88,6 +89,46 @@ router.get('/profile', auth, getHostProfile);
 router.get('/getHostDetails', auth, getHostDetails);
 router.get('/available', getAvailableHosts);
 router.put('/update-profile', auth, upload.single('avatar'), updateHostProfile);
+
+// Add delete profile endpoint
+router.delete('/delete-profile', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Find the host by user ID
+    const host = await Host.findOne({ user: userId });
+    
+    if (!host) {
+      return res.status(404).json({ message: "Host profile not found" });
+    }
+    
+    // Delete host profile
+    await Host.findOneAndDelete({ user: userId });
+    
+    // Update user to remove host status
+    await User.findByIdAndUpdate(userId, {
+      isHost: false,
+      hostId: null
+    });
+    
+    // Delete avatar file if exists
+    if (host.avatar) {
+      const avatarPath = path.join(__dirname, "..", "public", host.avatar);
+      if (fs.existsSync(avatarPath)) {
+        fs.unlinkSync(avatarPath);
+      }
+    }
+    
+    res.status(200).json({ message: "Host profile deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting host profile:", error);
+    res.status(500).json({ message: "Server error during profile deletion" });
+  }
+});
+
 router.get('/:hostId', getHostById);
+
+// Update host active status
+router.put('/update-status', auth, updateHostActiveStatus);
 
 module.exports = router;

@@ -7,9 +7,12 @@ export class SessionManager {
   // Session timeout - set to 24 hours in ms
   static SESSION_TIMEOUT = 24 * 60 * 60 * 1000;
   
-  // Get an item from sessionStorage
+  // Get an item from session storage
   static getItem(key) {
-    return sessionStorage.getItem(key);
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem(key);
+    }
+    return null;
   }
   
   // Set an item in sessionStorage with expiration
@@ -22,11 +25,13 @@ export class SessionManager {
     sessionStorage.setItem(`${key}_expires`, expires.toString());
   }
   
-  // Remove an item from sessionStorage
-  static removeItem(key) {
-    sessionStorage.removeItem(key);
-    sessionStorage.removeItem(`${key}_expires`);
+   // Remove an item from session storage
+   static removeItem(key) {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem(key);
+    }
   }
+  
   
   // Clear all sessionStorage data
   static clear() {
@@ -70,6 +75,8 @@ export class SessionManager {
     if (token) {
       this.setItem("hostToken", token);
       this.setItem("userRole", "host");
+      // Also store in localStorage for persistence
+      localStorage.setItem('hostToken', token);
       return true;
     }
     return false;
@@ -165,7 +172,8 @@ export class SessionManager {
     if (this.hasValidItem("hostToken")) {
       return this.getItem("hostToken");
     }
-    return null;
+    // Also check localStorage as fallback
+    return localStorage.getItem('hostToken');
   }
   
   // Get user token specifically (for user-only operations)
@@ -199,5 +207,9 @@ export class SessionManager {
     this.removeItem("token");
     this.removeItem("refreshToken");
     this.removeItem("userRole");
+    this.removeItem('hostId');
+    this.removeItem('hostName');
+    this.removeItem('hostEmail');
+    this.removeItem('hostProfileImage');
   }
 }

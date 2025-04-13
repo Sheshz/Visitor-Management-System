@@ -1,278 +1,286 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  User,
-  LogOut,
-  Settings,
-  Calendar,
-  BarChart2,
-  ChevronDown,
-  Home,
-  QrCode,
-  Clock,
-  Network,
-  UserPlus,
-  Menu,
-} from "lucide-react";
-//import "../CSS/HostDashboard.css"; // Import CSS
+import { useNavigate, Routes, Route, Link } from "react-router-dom";
+import { SessionManager } from "../utils/SessionManager";
+import "../CSS/HostDashboard.css";
 
-export default function HostDashboard() {
-  const [activeItem, setActiveItem] = useState("Overview");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
-  const [hostData, setHostData] = useState({
-    name: "Host",
-    email: "No email provided",
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+// Import icons for sidebar
+import { 
+  FaHome, 
+  FaUser, 
+  FaUserPlus, 
+  FaNetworkWired, 
+  FaHistory, 
+  FaCalendarAlt, 
+  FaQrcode, 
+  FaSignOutAlt,
+  FaChevronLeft,
+  FaChevronRight
+} from "react-icons/fa";
+
+// Import your existing pages
+import Overview from "./hosts/HostOverview";
+import HostProfile from "./hosts/HostProfile"; // Updated import path
+//import NewVisitor from "./pages/NewVisitor";
+import HostNetwork from "./hosts/HostNetwork";
+//import VisitationHistory from "./pages/VisitationHistory";
+//import CreateMeeting from "./pages/CreateMeeting";
+//import QRCodeScanner from "./pages/QRCodeScanner";
+
+const HostDashboard = () => {
   const navigate = useNavigate();
+  
+  // State for host information
+  const [hostInfo, setHostInfo] = useState({
+    name: "",
+    email: "",
+    hostId: "",
+    profileImage: ""
+  });
+  
+  // State for mobile sidebar toggle
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // State for sidebar collapsed mode
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  // State for current active page
+  const [activePage, setActivePage] = useState("overview");
 
+  // Load host information when component mounts
   useEffect(() => {
-    const fetchHostData = async () => {
-      setIsLoading(true);
-      const hostToken = localStorage.getItem("hostToken");
-
-      if (!hostToken) {
-        navigate("/host-login");
-        return;
-      }
-
+    const fetchHostInfo = async () => {
       try {
-        // In your HostDashboard.js useEffect:
-        const response = await fetch("http://localhost:5000/api/hosts/me", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${hostToken}`,
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
+        // First try to get info from SessionManager
+        const name = SessionManager.getItem("hostName") || localStorage.getItem("hostName");
+        const email = SessionManager.getItem("hostEmail") || localStorage.getItem("gp_remember_email");
+        const hostId = SessionManager.getItem("hostId") || localStorage.getItem("hostId");
+        const profileImage = SessionManager.getItem("hostProfileImage") || localStorage.getItem("hostProfileImage");
+        
+        // Set initial information from storage
+        setHostInfo({
+          name: name || "Host User",
+          email: email || "email@example.com",
+          hostId: hostId || "Not available",
+          profileImage: profileImage || ""
         });
-
-        if (response.ok) {
-          const data = await response.json();
-          setHostData({
-            name: data.host?.name || "Host",
-            email: data.host?.email || "No email provided",
+        
+        // If we have a token, fetch updated info from the server
+        const hostToken = SessionManager.getHostToken() || localStorage.getItem("hostToken");
+        
+        if (hostToken) {
+          console.log("Fetching host details with token:", hostToken);
+          
+          const response = await fetch("http://localhost:5000/api/hosts/getHostDetails", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${hostToken}`
+            }
           });
-          setError(null);
-        } else {
-          // If server responds with an error
-          const errorData = await response.json();
-          setError(errorData.message || "Failed to load host data");
-
-          // If unauthorized (token expired or invalid), redirect to login
-          if (response.status === 401) {
-            localStorage.removeItem("hostToken");
-            navigate("/host-login");
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log("API response data:", data);
+            
+            // Check for different possible field names in the API response
+            const updatedEmail = data.email || data.hostEmail || data.userEmail || email;
+            const updatedName = data.name || data.hostName || data.userName || name;
+            const updatedHostId = data.hostId || data.id || hostId;
+            const updatedProfileImage = data.avatar || data.profileImage || data.image || profileImage;
+            
+            // Update session storage with new data
+            if (updatedEmail) SessionManager.setItem("hostEmail", updatedEmail);
+            if (updatedName) SessionManager.setItem("hostName", updatedName);
+            if (updatedHostId) SessionManager.setItem("hostId", updatedHostId);
+            if (updatedProfileImage) SessionManager.setItem("hostProfileImage", updatedProfileImage);
+            
+            // Update local storage for persistence
+            if (updatedEmail) localStorage.setItem("gp_remember_email", updatedEmail);
+            if (updatedName) localStorage.setItem("hostName", updatedName);
+            if (updatedHostId) localStorage.setItem("hostId", updatedHostId);
+            if (updatedProfileImage) localStorage.setItem("hostProfileImage", updatedProfileImage);
+            
+            // Update state with the new data
+            const updatedInfo = {
+              name: updatedName,
+              email: updatedEmail,
+              hostId: updatedHostId,
+              profileImage: updatedProfileImage
+            };
+            
+            console.log("Updated host info:", updatedInfo);
+            setHostInfo(updatedInfo);
+          } else {
+            console.error("Failed to fetch host details:", response.status);
+            // Try to parse error message
+            try {
+              const errorData = await response.json();
+              console.error("Error details:", errorData);
+            } catch (e) {
+              console.error("Could not parse error response");
+            }
           }
         }
       } catch (error) {
-        console.error("Error fetching host data:", error);
-        setError("Network error. Please check your connection.");
-      } finally {
-        setIsLoading(false);
+        console.error("Error fetching host information:", error);
       }
     };
+    
+    fetchHostInfo();
+    
+    // Check for user preference in localStorage
+    const savedSidebarState = localStorage.getItem("sidebarCollapsed");
+    if (savedSidebarState) {
+      setSidebarCollapsed(savedSidebarState === "true");
+    }
+  }, []);
+  
+  // Save sidebar state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("sidebarCollapsed", sidebarCollapsed);
+  }, [sidebarCollapsed]);
 
-    fetchHostData();
-  }, [navigate]);
-
+  // Handle logout
   const handleLogout = () => {
+    // Clear tokens from localStorage and SessionManager
+    SessionManager.logoutHost();
     localStorage.removeItem("hostToken");
-    navigate("/host-login");
+    localStorage.removeItem("hostId");
+    localStorage.removeItem("hostName");
+    localStorage.removeItem("hostEmail");
+    localStorage.removeItem("gp_remember_email");
+    localStorage.removeItem("hostProfileImage");
+    
+    // Redirect to login page with logout parameter
+    navigate("/host-login?logout=true");
   };
 
-  const navItems = [
-    { name: "Overview", icon: <Home size={18} /> },
-    { name: "New Visitor", icon: <UserPlus size={18} /> },
-    { name: "Visitation History", icon: <Clock size={18} /> },
-    { name: "Host Network", icon: <Network size={18} /> },
-    { name: "QR Code Scanner", icon: <QrCode size={18} /> },
+  // Toggle sidebar collapsed state
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
+  // Close sidebar on mobile when navigating
+  const handleNavigation = (pageId) => {
+    setActivePage(pageId);
+    setSidebarOpen(false);
+  };
+
+  // Toggle mobile menu
+  const toggleMobileMenu = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  // Define sidebar navigation items
+  const sidebarItems = [
+    { id: "overview", label: "Overview", icon: <FaHome />, path: "/host-dashboard" },
+    { id: "hostProfile", label: "Host Profile", icon: <FaUser />, path: "/host-dashboard/profile" },
+    { id: "newVisitor", label: "New Visitor", icon: <FaUserPlus />, path: "/host-dashboard/new-visitor" },
+    { id: "hostNetwork", label: "Host Network", icon: <FaNetworkWired />, path: "/host-dashboard/network" },
+    { id: "visitationHistory", label: "Visitation History", icon: <FaHistory />, path: "/host-dashboard/history" },
+    { id: "createMeeting", label: "Create Meeting", icon: <FaCalendarAlt />, path: "/host-dashboard/meeting" },
+    { id: "qrScanner", label: "QR Code Scanner", icon: <FaQrcode />, path: "/host-dashboard/scanner" }
   ];
 
-  if (isLoading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading dashboard...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="dashboard-container">
-      <aside className={`sidebar ${sidebarExpanded ? "expanded" : ""}`}>
-        <button
-          className="menu-toggle"
-          onClick={() => setSidebarExpanded(!sidebarExpanded)}
-        >
-          <Menu size={24} />
-        </button>
-        <nav>
-          {navItems.map((item) => (
-            <div
-              key={item.name}
-              className={`nav-item ${activeItem === item.name ? "active" : ""}`}
-              onClick={() => setActiveItem(item.name)}
-            >
-              {item.icon}
-              <span>{item.name}</span>
-            </div>
-          ))}
-        </nav>
-        <button className="logout" onClick={handleLogout}>
-          <LogOut size={18} /> Logout
-        </button>
-      </aside>
+    <div className={`host-dashboard-container ${sidebarCollapsed ? 'sidebar-closed' : ''}`}>
+      {/* Mobile menu toggle button */}
+      <button 
+        className={`mobile-menu-toggle ${sidebarOpen ? 'menu-open' : ''}`} 
+        onClick={toggleMobileMenu}
+        aria-label="Toggle menu"
+      >
+        <span className="menu-icon"></span>
+      </button>
 
-      <main className="main-content">
-        <header className="header">
-          <div
-            className="profile-section"
-            onClick={() => setShowDropdown(!showDropdown)}
-          >
-            <div className="avatar">{hostData.name[0]}</div>
-            <div className="profile-info">
-              <p className="profile-name">
-                {hostData.name} <ChevronDown size={14} />
-              </p>
-              <p className="profile-email">{hostData.email}</p>
+      {/* Sidebar navigation */}
+      <aside className={`dashboard-sidebar ${sidebarOpen ? 'open' : ''}`}>
+        {/* Sidebar toggle button */}
+        <div 
+          className="sidebar-toggle" 
+          onClick={toggleSidebar}
+          aria-label="Toggle sidebar"
+        >
+          {sidebarCollapsed ? <FaChevronRight size={12} /> : <FaChevronLeft size={12} />}
+        </div>
+        
+        <div className="sidebar-header">
+          <h1>GetePass Pro</h1>
+          <div className="logo-small">GP</div>
+          <div className="host-info-brief">
+            <div className="host-avatar-small">
+              {hostInfo.profileImage ? (
+                <img src={hostInfo.profileImage} alt="Host Profile" />
+              ) : (
+                <div className="avatar-placeholder-small">
+                  {hostInfo.name ? hostInfo.name.charAt(0).toUpperCase() : "H"}
+                </div>
+              )}
+            </div>
+            <div className="host-brief-details">
+              <span className="host-name">{hostInfo.name}</span>
+              <span className="host-role">Professional Host</span>
             </div>
           </div>
+        </div>
+        
+        <nav className="sidebar-nav">
+          <ul>
+            {sidebarItems.map((item) => (
+              <li key={item.id}>
+                <Link
+                  to={item.path}
+                  className={`nav-item ${activePage === item.id ? 'active' : ''}`}
+                  onClick={() => handleNavigation(item.id)}
+                  title={sidebarCollapsed ? item.label : ""}
+                >
+                  <span className="icon">{item.icon}</span>
+                  <span className="label">{item.label}</span>
+                </Link>
+              </li>
+            ))}
+            <li className="sidebar-divider"></li>
+            <li>
+              <button 
+                className="nav-item logout-button" 
+                onClick={handleLogout}
+                title={sidebarCollapsed ? "Logout" : ""}
+              >
+                <span className="icon"><FaSignOutAlt /></span>
+                <span className="label">Logout</span>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </aside>
 
-          {showDropdown && (
-            <div className="profile-dropdown">
-              <div className="dropdown-item">
-                <User size={16} />
-                <span>Profile</span>
-              </div>
-              <div className="dropdown-item">
-                <Settings size={16} />
-                <span>Settings</span>
-              </div>
-              <div className="dropdown-item" onClick={handleLogout}>
-                <LogOut size={16} />
-                <span>Logout</span>
-              </div>
+      {/* Main content area */}
+      <main className="dashboard-content">
+        <div className="dashboard-header">
+          <h2 className="page-title">
+            {sidebarItems.find(item => item.id === activePage)?.label || 'Dashboard'}
+          </h2>
+          <div className="header-actions">
+            <div className="host-welcome">
+              Welcome, {hostInfo.name}
             </div>
-          )}
-        </header>
-
-        <div className="content-area">
-          {error && <div className="error-banner">{error}</div>}
-          <h2>{activeItem}</h2>
-          <p>Welcome to the {activeItem} section.</p>
-
-          {activeItem === "Overview" && (
-            <div className="dashboard-stats">
-              <div className="stat-card">
-                <h3>Today's Visitors</h3>
-                <p className="stat-value">0</p>
-              </div>
-              <div className="stat-card">
-                <h3>Total Visitors</h3>
-                <p className="stat-value">0</p>
-              </div>
-              <div className="stat-card">
-                <h3>Active QR Codes</h3>
-                <p className="stat-value">0</p>
-              </div>
-            </div>
-          )}
+          </div>
+        </div>
+        
+        <div className="content-container">
+          <Routes>
+            <Route index element={<Overview hostInfo={hostInfo} />} />
+            <Route path="profile" element={<HostProfile />} />
+            <Route path="new-visitor" element={<div>New Visitor Page (Coming Soon)</div>} />
+            <Route path="/network" element={<HostNetwork />} />
+            <Route path="history" element={<div>Visitation History Page (Coming Soon)</div>} />
+            <Route path="meeting" element={<div>Create Meeting Page (Coming Soon)</div>} />
+            <Route path="scanner" element={<div>QR Code Scanner Page (Coming Soon)</div>} />
+          </Routes>
         </div>
       </main>
-
-      {/* Additional CSS for new elements */}
-      <style>
-        {`
-          .loading-container {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f7fafc;
-          }
-          
-          .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid #4299e1;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 16px;
-          }
-          
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          
-          .profile-dropdown {
-            position: absolute;
-            top: 60px;
-            right: 20px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 200px;
-            z-index: 10;
-          }
-          
-          .dropdown-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            cursor: pointer;
-          }
-          
-          .dropdown-item:hover {
-            background-color: #f7fafc;
-          }
-          
-          .dropdown-item span {
-            margin-left: 12px;
-          }
-          
-          .error-banner {
-            background-color: #fff5f5;
-            color: #e53e3e;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-          }
-          
-          .dashboard-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 24px;
-            margin-top: 24px;
-          }
-          
-          .stat-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          }
-          
-          .stat-card h3 {
-            margin: 0;
-            color: #4a5568;
-            font-size: 16px;
-            font-weight: 500;
-          }
-          
-          .stat-value {
-            font-size: 32px;
-            font-weight: 600;
-            color: #2d3748;
-            margin: 16px 0 0 0;
-          }
-        `}
-      </style>
     </div>
   );
-}
+};
+
+export default HostDashboard;

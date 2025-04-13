@@ -274,7 +274,81 @@ const getHostById = async (req, res) => {
     res.status(500).json({ message: "Server error fetching host profile" });
   }
 };
+// Add this to your hostController.js file
 
+const updateHostActiveStatus = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Find host by user ID
+    const host = await Host.findOne({ user: userId });
+    
+    if (!host) {
+      return res.status(404).json({ message: "Host profile not found" });
+    }
+    
+    // Update active status and activeUntil
+    const { isActive, activeUntil } = req.body;
+    
+    // Validate the request data
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({ message: "isActive must be a boolean value" });
+    }
+    
+    // If activating, require activeUntil
+    if (isActive && !activeUntil) {
+      return res.status(400).json({ message: "activeUntil is required when activating host" });
+    }
+    
+    // Update the host document
+    const updatedHost = await Host.findOneAndUpdate(
+      { user: userId },
+      { 
+        isActive: isActive,
+        activeUntil: isActive ? activeUntil : null
+      },
+      { new: true }
+    ).select("-password");
+    
+    res.json({
+      success: true,
+      message: `Host status updated to ${isActive ? 'active' : 'inactive'}`,
+      host: updatedHost
+    });
+  } catch (error) {
+    console.error("Error updating host active status:", error);
+    res.status(500).json({ message: "Server error updating host status" });
+  }
+};
+
+// Add a function to check and update expired host statuses
+const checkAndUpdateHostStatuses = async () => {
+  try {
+    const currentTime = new Date();
+    
+    // Find all hosts whose active status should expire
+    const hostsToUpdate = await Host.find({
+      isActive: true,
+      activeUntil: { $lt: currentTime }
+    });
+    
+    // Update each host to inactive
+    for (const host of hostsToUpdate) {
+      host.isActive = false;
+      host.activeUntil = null;
+      await host.save();
+      
+      console.log(`Host ${host.name} (ID: ${host.hostID}) status set to inactive due to expiration`);
+    }
+    
+    return hostsToUpdate.length;
+  } catch (error) {
+    console.error("Error checking and updating host statuses:", error);
+    return 0;
+  }
+};
+
+// Add these functions to module.exports
 module.exports = {
   loginHost,
   createHostProfile,
@@ -282,5 +356,7 @@ module.exports = {
   getAvailableHosts,
   updateHostProfile,
   getHostById,
-  getHostDetails,  // Added the new controller function to exports
+  getHostDetails,
+  updateHostActiveStatus,
+  checkAndUpdateHostStatuses,
 };
