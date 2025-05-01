@@ -13,6 +13,10 @@ const hostSchema = new mongoose.Schema({
     default: () => `HOST-${uuidv4().substring(0, 8).toUpperCase()}`,
     unique: true,
   },
+  password: {  // Added this field as it's used in controller
+    type: String,
+    required: false  // Not requiring password as it might be optional
+  },
   name: {
     type: String,
     required: true
@@ -21,29 +25,22 @@ const hostSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  username: {  // Added this field as it's used in controller
-    type: String,
-    required: true
-  },
-  password: {  // Added this field as it's used in controller
-    type: String,
-    required: false  // Not requiring password as it might be optional
-  },
   bio: {
     type: String,
-    required: true
+    default: ""
   },
+  // Changed to array to match how it's used in the controller
   expertise: {
-    type: String,
-    required: true
+    type: [String],
+    default: []
   },
   location: {
     type: String,
-    required: true
+    default: ""
   },
   experience: {
     type: String,
-    required: true
+    default: ""
   },
   avatar: {
     type: String,
@@ -59,10 +56,6 @@ const hostSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
   rating: {
     type: Number,
     default: 0,
@@ -71,6 +64,15 @@ const hostSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  // Adding availability field since it's used in the appointment system
+  availability: [{
+    day: {
+      type: String,
+      enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    },
+    startTime: String,
+    endTime: String
+  }]
 },
 { timestamps: true }
 );

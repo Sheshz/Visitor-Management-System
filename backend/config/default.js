@@ -2,7 +2,7 @@
 module.exports = {
   // MongoDB connection string
   mongoURI:
-    process.env.MONGO_URI || "mongodb://localhost:27017/visitor-management",
+    process.env.MONGO_URI || "mongodb://localhost:27018/visitor-management",
 
   // JWT Secret for token signing
   jwtSecret: process.env.JWT_SECRET || "c23Z!1hJ@k3bLw$BfR92pTnG9",

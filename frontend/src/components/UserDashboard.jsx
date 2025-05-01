@@ -25,7 +25,7 @@ import Notifications from "./user/Notifications";
 import generateColorFromEmail from "../utils/generateColor";
 import useUserData from "../hooks/useUserData";
 import MyVisitation from "../components/user/MyVisitation";
-import AppointmentConfirmation from "./user/Appointment";
+import AppointmentConfirmation from "./appointment/AppointmentDetails";
 import HostDirectory from "./hosts/HostDirectory";
 
 // Import the enhanced SessionManager

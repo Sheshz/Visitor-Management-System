@@ -9,129 +9,29 @@ const sendMessage = async (req, res) => {
     const { meetingId } = req.params;
     const userId = req.user.userId;
     const hostId = req.user.hostId;
-    const { message, isPrivate, recipientId } = req.body;
     
-    // Validate message
-    if (!message || message.trim() === "") {
-      return res.status(400).json({ message: "Message cannot be empty" });
-    }
-    
-    // Find the meeting
+    // Verify meeting exists and is active
     const meeting = await Meeting.findById(meetingId);
-    
     if (!meeting) {
       return res.status(404).json({ message: "Meeting not found" });
     }
     
-    // Check if meeting is active
     if (meeting.status !== "active") {
-      return res.status(400).json({ 
-        message: "Cannot send messages to inactive meetings" 
-      });
+      return res.status(400).json({ message: "Meeting is not active" });
     }
+
+    // Verify user is either host or participant
+    const isHost = hostId && meeting.host.toString() === hostId;
+    const isParticipant = meeting.participants.some(
+      p => p.user && p.user.toString() === userId
+    );
     
-    // Determine if sender is host or participant
-    let sender, senderModel, senderName;
-    
-    if (hostId) {
-      // Sender is a host
-      const host = await Host.findOne({ hostID: hostId });
-      if (!host) {
-        return res.status(404).json({ message: "Host not found" });
-      }
-      
-      if (meeting.host.toString() !== host._id.toString()) {
-        return res.status(403).json({ message: "You are not the host of this meeting" });
-      }
-      
-      sender = host._id;
-      senderModel = "Host";
-      senderName = host.name;
-    } else {
-      // Sender is a user/participant
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Check if user is a participant
-      const isParticipant = meeting.participants.some(
-        p => p.user && p.user.toString() === userId && p.status === "attended"
-      );
-      
-      if (!isParticipant) {
-        return res.status(403).json({ message: "You must join the meeting to send messages" });
-      }
-      
-      sender = user._id;
-      senderModel = "User";
-      senderName = `${user.firstName} ${user.lastName}`.trim();
+    if (!isHost && !isParticipant) {
+      return res.status(403).json({ message: "Not authorized to send messages" });
     }
+
+    // Rest of your message sending logic...
     
-    // Handle private messages
-    let recipient = null;
-    let recipientModel = null;
-    
-    if (isPrivate && recipientId) {
-      // Check if recipient is the host
-      if (meeting.host.toString() === recipientId) {
-        recipient = meeting.host;
-        recipientModel = "Host";
-      } else {
-        // Check if recipient is a participant
-        const participantIndex = meeting.participants.findIndex(
-          p => p.user && p.user.toString() === recipientId
-        );
-        
-        if (participantIndex === -1) {
-          return res.status(404).json({ message: "Recipient not found in meeting" });
-        }
-        
-        recipient = meeting.participants[participantIndex].user;
-        recipientModel = "User";
-      }
-    }
-    
-    // Create chat message
-    const newMessage = new MeetingChat({
-      meetingId: meeting._id, // Changed from meetingId to meeting._id
-      sender,
-      senderModel,
-      senderName,
-      message,
-      isPrivate: isPrivate || false,
-      recipient,
-      recipientModel: recipient ? recipientModel : null
-    });
-    
-    await newMessage.save();
-    
-    // Emit through socket.io
-    const io = req.app.get('io');
-    if (io) {
-      const messageData = {
-        ...newMessage.toObject(),
-        senderModel,
-        senderName
-      };
-      
-      // If private message, only send to sender and recipient
-      if (isPrivate && recipient) {
-        // Create room IDs for both sender and recipient
-        const senderRoom = `user-${sender.toString()}`;
-        const recipientRoom = `user-${recipient.toString()}`;
-        
-        io.to(senderRoom).to(recipientRoom).emit('newPrivateMessage', messageData);
-      } else {
-        // Public message goes to the meeting room
-        io.to(`meeting-${meeting._id}`).emit('newMessage', messageData);
-      }
-    }
-    
-    res.status(201).json({
-      message: "Message sent successfully",
-      chatMessage: newMessage
-    });
   } catch (error) {
     console.error("Error sending message:", error);
     res.status(500).json({ message: "Server error", error: error.message });

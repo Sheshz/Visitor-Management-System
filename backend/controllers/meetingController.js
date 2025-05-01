@@ -1,387 +1,375 @@
 const Meeting = require("../models/Meeting");
 const Host = require("../models/Host");
 const User = require("../models/User");
-const { sendMeetingInvitation, sendMeetingReminder } = require("../utils/emailService");
+const emailService = require("../utils/emailMeetingService");
+const { v4: uuidv4 } = require('uuid');
 
 // Create a new meeting
 const createMeeting = async (req, res) => {
   try {
-    const hostId = req.user.hostId;
-    
-    // Verify the user is a host
-    const host = await Host.findOne({ hostID: hostId });
-    if (!host) {
-      return res.status(404).json({ message: "Host not found" });
-    }
-    
-    // Check if host is active
-    if (!host.isActive) {
-      return res.status(403).json({ message: "Your host account is currently inactive" });
-    }
-    
-    const { 
-      title, 
-      description, 
-      startTime, 
-      endTime, 
-      participants, 
-      password, 
-      recordingEnabled 
-    } = req.body;
-    
-    // Calculate duration in minutes
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    const duration = Math.round((end - start) / (1000 * 60)); // Convert ms to minutes
-    
-    if (duration <= 0) {
-      return res.status(400).json({ message: "End time must be after start time" });
-    }
-    
-    // Create a new meeting
-    const newMeeting = new Meeting({
+    const {
       title,
       description,
-      host: host._id,
-      startTime: start,
-      endTime: end,
-      duration,
-      password: password || "",
+      startTime,
+      endTime,
+      recordingEnabled,
+      password,
+      participants
+    } = req.body;
+
+    // Validate required fields
+    if (!title || !startTime || !endTime) {
+      return res.status(400).json({
+        success: false,
+        message: "Meeting title, start time, and end time are required"
+      });
+    }
+
+    // Validate that end time is after start time
+    if (new Date(endTime) <= new Date(startTime)) {
+      return res.status(400).json({
+        success: false,
+        message: "End time must be after start time"
+      });
+    }
+
+    // Generate unique meeting ID
+    const meetingId = `meet-${uuidv4().substring(0, 8)}`;
+
+    // Create the meeting
+    const newMeeting = new Meeting({
+      meetingId,
+      title,
+      description: description || "",
+      host: req.user.id, // From auth middleware
+      startTime: new Date(startTime),
+      endTime: new Date(endTime),
       recordingEnabled: recordingEnabled || false,
-      participants: []
+      password: password || "",
+      status: "scheduled",
+      createdAt: new Date()
     });
-    
-    // Save the meeting first to get a valid _id
-    await newMeeting.save();
-    
+
     // Add participants if provided
     if (participants && participants.length > 0) {
+      // Check if participants exist in the database
+      const participantEmails = participants.map(p => p.email);
+      const existingUsers = await User.find({ email: { $in: participantEmails } }).select('_id email');
+      
+      const existingEmailMap = {};
+      existingUsers.forEach(user => {
+        existingEmailMap[user.email] = user._id;
+      });
+
+      // Process participants
       for (const participant of participants) {
-        // Check if participant exists as a user
-        const user = await User.findOne({ email: participant.email });
-        
-        // Generate 6-digit access code for this participant
-        const accessCode = Math.floor(100000 + Math.random() * 900000).toString();
-        
-        // Add participant to meeting
-        newMeeting.participants.push({
-          user: user ? user._id : null,
+        const participantObj = {
           email: participant.email,
-          name: participant.name || participant.email.split('@')[0],
-          status: "pending",
-          accessCode: accessCode
-        });
-        
-        // Send invitation email with QR code
+          name: participant.name,
+          status: "pending"
+        };
+
+        // If user exists in our system, add their user ID
+        if (existingEmailMap[participant.email]) {
+          participantObj.userId = existingEmailMap[participant.email];
+        }
+
+        newMeeting.participants.push(participantObj);
+      }
+    }
+
+    // Save the meeting
+    await newMeeting.save();
+
+    // Send invitation emails to participants
+    if (participants && participants.length > 0) {
+      for (const participant of participants) {
         try {
-          await sendMeetingInvitation(
+          // Generate meeting join URL (you may need to adjust this based on your frontend setup)
+          const joinUrl = `${process.env.FRONTEND_URL}/meeting/join/${meetingId}`;
+          
+          await emailService.sendInvitationEmail(
             participant.email,
-            participant.name || participant.email.split('@')[0],
-            host.name,
-            {
-              ...newMeeting.toObject(),
-              meetingId: newMeeting._id.toString() // Ensure meetingId is available as string
-            },
-            accessCode // Pass the generated access code
+            participant.name,
+            req.user.name, // Host name
+            title,
+            description || "",
+            new Date(startTime),
+            new Date(endTime),
+            meetingId,
+            password || "",
+            joinUrl
           );
         } catch (emailError) {
           console.error(`Failed to send invitation to ${participant.email}:`, emailError);
-          // Continue with the rest of the participants even if one email fails
+          // Continue with other invitations even if one fails
         }
       }
-      
-      // Save the meeting again with the participants added
-      await newMeeting.save();
     }
-    
+
     res.status(201).json({
+      success: true,
       message: "Meeting created successfully",
-      meeting: newMeeting
+      meeting: {
+        meetingId: newMeeting.meetingId,
+        title: newMeeting.title,
+        startTime: newMeeting.startTime,
+        endTime: newMeeting.endTime,
+        status: newMeeting.status
+      }
     });
   } catch (error) {
     console.error("Error creating meeting:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error while creating meeting",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 
 // Get all meetings for a host
 const getHostMeetings = async (req, res) => {
   try {
-    const hostId = req.user.hostId;
-    
-    // Verify the user is a host
-    const host = await Host.findOne({ hostID: hostId });
-    if (!host) {
-      return res.status(404).json({ message: "Host not found" });
-    }
-    
-    // Get filter parameters
-    const { status, startDate, endDate } = req.query;
-    
-    // Build query
-    const query = { host: host._id };
-    
-    if (status) {
-      query.status = status;
-    }
-    
-    if (startDate || endDate) {
-      query.startTime = {};
-      if (startDate) {
-        query.startTime.$gte = new Date(startDate);
-      }
-      if (endDate) {
-        query.startTime.$lte = new Date(endDate);
-      }
-    }
-    
-    // Get meetings
-    const meetings = await Meeting.find(query)
+    const meetings = await Meeting.find({ host: req.user.id })
       .sort({ startTime: 1 })
-      .populate("participants.user", "firstName lastName email");
-    
-    res.json(meetings);
+      .select("meetingId title startTime endTime status participants");
+
+    res.status(200).json({
+      success: true,
+      count: meetings.length,
+      meetings
+    });
   } catch (error) {
-    console.error("Error getting host meetings:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Error fetching host meetings:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching meetings",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 
 // Get all meetings for a user
 const getUserMeetings = async (req, res) => {
   try {
-    const userId = req.user.userId;
-    
-    // Get meetings where user is a participant
     const meetings = await Meeting.find({
-      "participants.user": userId,
-      "participants.status": { $ne: "declined" }
+      "participants.userId": req.user.id,
+      status: { $ne: "cancelled" } // Don't show cancelled meetings
     })
-    .sort({ startTime: 1 })
-    .populate("host", "name email");
-    
-    res.json(meetings);
+      .sort({ startTime: 1 })
+      .select("meetingId title host startTime endTime status");
+
+    res.status(200).json({
+      success: true,
+      count: meetings.length,
+      meetings
+    });
   } catch (error) {
-    console.error("Error getting user meetings:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Error fetching user meetings:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching meetings",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 
 // Get meeting by ID
 const getMeetingById = async (req, res) => {
   try {
-    const { meetingId } = req.params;
-    
-    const meeting = await Meeting.findOne({ _id: meetingId })
-      .populate("host", "name email avatar")
-      .populate("participants.user", "firstName lastName email");
-    
+    const meeting = await Meeting.findOne({ meetingId: req.params.meetingId })
+      .populate("host", "name email")
+      .select("-__v");
+
     if (!meeting) {
-      return res.status(404).json({ message: "Meeting not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Meeting not found"
+      });
     }
-    
-    res.json(meeting);
+
+    // Check if user is authorized to view this meeting
+    const isHost = meeting.host._id.toString() === req.user.id;
+    const isParticipant = meeting.participants.some(
+      p => p.userId && p.userId.toString() === req.user.id
+    );
+
+    if (!isHost && !isParticipant) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to view this meeting"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      meeting
+    });
   } catch (error) {
-    console.error("Error getting meeting:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Error fetching meeting:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching meeting",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 
 // Update meeting details
 const updateMeeting = async (req, res) => {
   try {
-    const { meetingId } = req.params;
-    const hostId = req.user.hostId;
-    
-    // Verify the user is a host
-    const host = await Host.findOne({ hostID: hostId });
-    if (!host) {
-      return res.status(404).json({ message: "Host not found" });
-    }
-    
+    const { title, description, startTime, endTime, recordingEnabled, password } = req.body;
+
     // Find the meeting
-    const meeting = await Meeting.findOne({ 
-      _id: meetingId,
-      host: host._id
-    });
-    
+    const meeting = await Meeting.findOne({ meetingId: req.params.meetingId });
+
     if (!meeting) {
-      return res.status(404).json({ message: "Meeting not found or not authorized" });
-    }
-    
-    // Don't allow updating completed or cancelled meetings
-    if (meeting.status === "completed" || meeting.status === "cancelled") {
-      return res.status(400).json({ 
-        message: `Cannot update a ${meeting.status} meeting` 
+      return res.status(404).json({
+        success: false,
+        message: "Meeting not found"
       });
     }
-    
-    const { 
-      title, 
-      description, 
-      startTime, 
-      endTime, 
-      password, 
-      recordingEnabled,
-      status 
-    } = req.body;
-    
+
     // Update fields if provided
     if (title) meeting.title = title;
-    if (description) meeting.description = description;
-    if (password !== undefined) meeting.password = password;
+    if (description !== undefined) meeting.description = description;
+    if (startTime) meeting.startTime = new Date(startTime);
+    if (endTime) meeting.endTime = new Date(endTime);
     if (recordingEnabled !== undefined) meeting.recordingEnabled = recordingEnabled;
-    if (status) meeting.status = status;
-    
-    // Update times and duration if provided
-    if (startTime && endTime) {
-      const start = new Date(startTime);
-      const end = new Date(endTime);
-      const duration = Math.round((end - start) / (1000 * 60)); // Convert ms to minutes
-      
-      if (duration <= 0) {
-        return res.status(400).json({ message: "End time must be after start time" });
-      }
-      
-      meeting.startTime = start;
-      meeting.endTime = end;
-      meeting.duration = duration;
+    if (password) meeting.password = password;
+
+    // Validate that end time is after start time
+    if (new Date(meeting.endTime) <= new Date(meeting.startTime)) {
+      return res.status(400).json({
+        success: false,
+        message: "End time must be after start time"
+      });
     }
-    
-    // Save changes
+
+    // Save the updated meeting
     await meeting.save();
-    
-    // If meeting details changed significantly, notify participants
-    if (title || startTime || endTime) {
-      for (const participant of meeting.participants) {
-        if (participant.status !== "declined") {
-          try {
-            // Send updated meeting details with existing access code
-            await sendMeetingReminder(
-              participant.email,
-              participant.name,
-              host.name,
-              {
-                ...meeting.toObject(),
-                meetingId: meeting._id.toString()
-              },
-              "Meeting details have been updated",
-              participant.accessCode // Use the stored access code
-            );
-          } catch (emailError) {
-            console.error(`Failed to send update to ${participant.email}:`, emailError);
-            // Continue with the rest of the participants even if one email fails
-          }
-        }
-      }
-    }
-    
-    res.json({
+
+    res.status(200).json({
+      success: true,
       message: "Meeting updated successfully",
-      meeting
+      meeting: {
+        meetingId: meeting.meetingId,
+        title: meeting.title,
+        startTime: meeting.startTime,
+        endTime: meeting.endTime,
+        status: meeting.status
+      }
     });
   } catch (error) {
     console.error("Error updating meeting:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error while updating meeting",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 
 // Add participants to meeting
 const addParticipants = async (req, res) => {
   try {
-    const { meetingId } = req.params;
-    const hostId = req.user.hostId;
     const { participants } = req.body;
-    
-    // Verify the user is a host
-    const host = await Host.findOne({ hostID: hostId });
-    if (!host) {
-      return res.status(404).json({ message: "Host not found" });
-    }
-    
-    // Find the meeting
-    const meeting = await Meeting.findOne({ 
-      _id: meetingId,
-      host: host._id 
-    });
-    
-    if (!meeting) {
-      return res.status(404).json({ message: "Meeting not found or not authorized" });
-    }
-    
-    // Don't allow adding participants to completed or cancelled meetings
-    if (meeting.status === "completed" || meeting.status === "cancelled") {
-      return res.status(400).json({ 
-        message: `Cannot add participants to a ${meeting.status} meeting` 
+
+    if (!participants || !Array.isArray(participants) || participants.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Participants array is required"
       });
     }
-    
-    if (!participants || !Array.isArray(participants) || participants.length === 0) {
-      return res.status(400).json({ message: "Participants list is required" });
+
+    // Find the meeting
+    const meeting = await Meeting.findOne({ meetingId: req.params.meetingId });
+
+    if (!meeting) {
+      return res.status(404).json({
+        success: false,
+        message: "Meeting not found"
+      });
     }
-    
-    // Keep track of added participants for email notifications
-    const newParticipants = [];
-    
-    // Process each participant
+
+    // Get existing participant emails
+    const existingEmails = meeting.participants.map(p => p.email);
+
+    // Check if new participants exist in the database
+    const newParticipantEmails = participants
+      .map(p => p.email)
+      .filter(email => !existingEmails.includes(email));
+
+    const existingUsers = await User.find({ email: { $in: newParticipantEmails } }).select(
+      "_id email"
+    );
+
+    const existingEmailMap = {};
+    existingUsers.forEach(user => {
+      existingEmailMap[user.email] = user._id;
+    });
+
+    // Add new participants
+    let addedParticipants = 0;
     for (const participant of participants) {
-      // Check if participant already exists
-      const existingParticipant = meeting.participants.find(
-        p => p.email.toLowerCase() === participant.email.toLowerCase()
-      );
-      
-      if (existingParticipant) {
-        continue; // Skip existing participants
+      // Skip if already in the meeting
+      if (existingEmails.includes(participant.email)) {
+        continue;
       }
-      
-      // Check if participant exists as a user
-      const user = await User.findOne({ email: participant.email });
-      
-      // Generate access code for new participant
-      const accessCode = Math.floor(100000 + Math.random() * 900000).toString();
-      
-      // Add new participant
-      const newParticipant = {
-        user: user ? user._id : null,
+
+      const participantObj = {
         email: participant.email,
-        name: participant.name || participant.email.split('@')[0],
-        status: "pending",
-        accessCode: accessCode
+        name: participant.name,
+        status: "pending"
       };
-      
-      meeting.participants.push(newParticipant);
-      newParticipants.push({...newParticipant, accessCode});
-    }
-    
-    // Save changes
-    await meeting.save();
-    
-    // Send invitations to new participants
-    for (const participant of newParticipants) {
+
+      // If user exists in our system, add their user ID
+      if (existingEmailMap[participant.email]) {
+        participantObj.userId = existingEmailMap[participant.email];
+      }
+
+      meeting.participants.push(participantObj);
+      addedParticipants++;
+
+      // Send invitation email
       try {
-        await sendMeetingInvitation(
+        // Generate meeting join URL
+        const joinUrl = `${process.env.FRONTEND_URL}/meeting/join/${meeting.meetingId}`;
+        
+        await emailService.sendInvitationEmail(
           participant.email,
           participant.name,
-          host.name,
-          {
-            ...meeting.toObject(),
-            meetingId: meeting._id.toString()
-          },
-          participant.accessCode // Pass the stored access code
+          req.user.name,
+          meeting.title,
+          meeting.description,
+          meeting.startTime,
+          meeting.endTime,
+          meeting.meetingId,
+          meeting.password,
+          joinUrl
         );
       } catch (emailError) {
         console.error(`Failed to send invitation to ${participant.email}:`, emailError);
-        // Continue with the rest of the participants even if one email fails
+        // Continue with other invitations even if one fails
       }
     }
-    
-    res.json({
-      message: `${newParticipants.length} participants added successfully`,
-      meeting
+
+    // Save the updated meeting
+    await meeting.save();
+
+    res.status(200).json({
+      success: true,
+      message: `${addedParticipants} participant(s) added successfully`,
+      addedCount: addedParticipants
     });
   } catch (error) {
     console.error("Error adding participants:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error while adding participants",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 
@@ -389,354 +377,329 @@ const addParticipants = async (req, res) => {
 const removeParticipant = async (req, res) => {
   try {
     const { meetingId, email } = req.params;
-    const hostId = req.user.hostId;
-    
-    // Verify the user is a host
-    const host = await Host.findOne({ hostID: hostId });
-    if (!host) {
-      return res.status(404).json({ message: "Host not found" });
-    }
-    
+
     // Find the meeting
-    const meeting = await Meeting.findOne({ 
-      _id: meetingId,
-      host: host._id 
-    });
-    
+    const meeting = await Meeting.findOne({ meetingId });
+
     if (!meeting) {
-      return res.status(404).json({ message: "Meeting not found or not authorized" });
-    }
-    
-    // Don't allow removing participants from completed meetings
-    if (meeting.status === "completed") {
-      return res.status(400).json({ 
-        message: "Cannot remove participants from a completed meeting" 
+      return res.status(404).json({
+        success: false,
+        message: "Meeting not found"
       });
     }
-    
-    // Remove participant
-    meeting.participants = meeting.participants.filter(
-      p => p.email.toLowerCase() !== email.toLowerCase()
-    );
-    
-    // Save changes
+
+    // Find the participant index
+    const participantIndex = meeting.participants.findIndex(p => p.email === email);
+
+    if (participantIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: "Participant not found in this meeting"
+      });
+    }
+
+    // Remove the participant
+    meeting.participants.splice(participantIndex, 1);
+
+    // Save the updated meeting
     await meeting.save();
-    
-    res.json({
-      message: "Participant removed successfully",
-      meeting
+
+    res.status(200).json({
+      success: true,
+      message: "Participant removed successfully"
     });
   } catch (error) {
     console.error("Error removing participant:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error while removing participant",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 
 // Start a meeting
 const startMeeting = async (req, res) => {
   try {
-    const { meetingId } = req.params;
-    const hostId = req.user.hostId;
-    
-    // Verify the user is a host
-    const host = await Host.findOne({ hostID: hostId });
-    if (!host) {
-      return res.status(404).json({ message: "Host not found" });
-    }
-    
-    // Find the meeting
-    const meeting = await Meeting.findOne({ 
-      _id: meetingId,
-      host: host._id 
-    });
-    
+    const meeting = await Meeting.findOne({ meetingId: req.params.meetingId });
+
     if (!meeting) {
-      return res.status(404).json({ message: "Meeting not found or not authorized" });
-    }
-    
-    // Check if meeting is already active or completed
-    if (meeting.status === "active") {
-      return res.status(400).json({ message: "Meeting is already active" });
-    }
-    
-    if (meeting.status === "completed" || meeting.status === "cancelled") {
-      return res.status(400).json({ 
-        message: `Cannot start a ${meeting.status} meeting` 
+      return res.status(404).json({
+        success: false,
+        message: "Meeting not found"
       });
     }
-    
-    // Update meeting status
-    meeting.status = "active";
-    await meeting.save();
-    
-    // Notify participants that meeting has started
-    for (const participant of meeting.participants) {
-      if (participant.status !== "declined") {
-        try {
-          await sendMeetingReminder(
-            participant.email,
-            participant.name,
-            host.name,
-            {
-              ...meeting.toObject(),
-              meetingId: meeting._id.toString()
-            },
-            "The meeting has started",
-            participant.accessCode // Pass the stored access code
-          );
-        } catch (emailError) {
-          console.error(`Failed to send start notification to ${participant.email}:`, emailError);
-          // Continue with the rest of the participants even if one email fails
-        }
-      }
+
+    if (meeting.status === "cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot start a cancelled meeting"
+      });
     }
-    
-    res.json({
+
+    if (meeting.status === "completed") {
+      return res.status(400).json({
+        success: false,
+        message: "Meeting is already completed"
+      });
+    }
+
+    meeting.status = "active";
+    meeting.actualStartTime = new Date();
+
+    await meeting.save();
+
+    res.status(200).json({
+      success: true,
       message: "Meeting started successfully",
-      meeting,
-      roomUrl: `/meeting-room/${meeting._id}`
+      meeting: {
+        meetingId: meeting.meetingId,
+        status: meeting.status,
+        actualStartTime: meeting.actualStartTime
+      }
     });
   } catch (error) {
     console.error("Error starting meeting:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error while starting meeting",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 
 // End a meeting
 const endMeeting = async (req, res) => {
   try {
-    const { meetingId } = req.params;
-    const hostId = req.user.hostId;
-    
-    // Verify the user is a host
-    const host = await Host.findOne({ hostID: hostId });
-    if (!host) {
-      return res.status(404).json({ message: "Host not found" });
-    }
-    
-    // Find the meeting
-    const meeting = await Meeting.findOne({ 
-      _id: meetingId,
-      host: host._id 
-    });
-    
+    const meeting = await Meeting.findOne({ meetingId: req.params.meetingId });
+
     if (!meeting) {
-      return res.status(404).json({ message: "Meeting not found or not authorized" });
-    }
-    
-    // Check if meeting is active
-    if (meeting.status !== "active") {
-      return res.status(400).json({ 
-        message: `Cannot end a meeting that is not active. Current status: ${meeting.status}` 
+      return res.status(404).json({
+        success: false,
+        message: "Meeting not found"
       });
     }
-    
-    // Update meeting status
+
+    if (meeting.status !== "active") {
+      return res.status(400).json({
+        success: false,
+        message: "Only active meetings can be ended"
+      });
+    }
+
     meeting.status = "completed";
-    
-    // Update actual end time
-    meeting.endTime = new Date();
-    
-    // Save changes
+    meeting.actualEndTime = new Date();
+
     await meeting.save();
-    
-    res.json({
+
+    res.status(200).json({
+      success: true,
       message: "Meeting ended successfully",
-      meeting
+      meeting: {
+        meetingId: meeting.meetingId,
+        status: meeting.status,
+        actualEndTime: meeting.actualEndTime
+      }
     });
   } catch (error) {
     console.error("Error ending meeting:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error while ending meeting",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 
 // Cancel a meeting
 const cancelMeeting = async (req, res) => {
   try {
-    const { meetingId } = req.params;
-    const hostId = req.user.hostId;
-    
-    // Verify the user is a host
-    const host = await Host.findOne({ hostID: hostId });
-    if (!host) {
-      return res.status(404).json({ message: "Host not found" });
-    }
-    
-    // Find the meeting
-    const meeting = await Meeting.findOne({ 
-      _id: meetingId,
-      host: host._id 
-    });
-    
+    const meeting = await Meeting.findOne({ meetingId: req.params.meetingId });
+
     if (!meeting) {
-      return res.status(404).json({ message: "Meeting not found or not authorized" });
+      return res.status(404).json({
+        success: false,
+        message: "Meeting not found"
+      });
     }
-    
-    // Check if meeting can be cancelled
-    if (meeting.status === "completed") {
-      return res.status(400).json({ message: "Cannot cancel a completed meeting" });
+
+    if (meeting.status === "completed" || meeting.status === "cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel a meeting that is already ${meeting.status}`
+      });
     }
-    
-    if (meeting.status === "cancelled") {
-      return res.status(400).json({ message: "Meeting is already cancelled" });
-    }
-    
-    // Update meeting status
+
     meeting.status = "cancelled";
+    meeting.cancelledAt = new Date();
+
     await meeting.save();
-    
-    // Notify participants of cancellation
+
+    // Notify participants about cancellation
     for (const participant of meeting.participants) {
-      if (participant.status !== "declined") {
-        try {
-          await sendMeetingReminder(
-            participant.email,
-            participant.name,
-            host.name,
-            {
-              ...meeting.toObject(),
-              meetingId: meeting._id.toString()
-            },
-            "The meeting has been cancelled",
-            participant.accessCode // Pass the stored access code
-          );
-        } catch (emailError) {
-          console.error(`Failed to send cancellation to ${participant.email}:`, emailError);
-          // Continue with the rest of the participants even if one email fails
-        }
+      try {
+        await emailService.sendCancellationEmail(
+          participant.email,
+          participant.name,
+          req.user.name,
+          meeting.title,
+          meeting.startTime,
+          meeting.meetingId
+        );
+      } catch (notifyError) {
+        console.error(`Failed to notify ${participant.email} about cancellation:`, notifyError);
       }
     }
-    
-    res.json({
+
+    res.status(200).json({
+      success: true,
       message: "Meeting cancelled successfully",
-      meeting
+      meeting: {
+        meetingId: meeting.meetingId,
+        status: meeting.status
+      }
     });
   } catch (error) {
     console.error("Error cancelling meeting:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error while cancelling meeting",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 
 // User responds to meeting invitation (accept/decline)
 const respondToInvitation = async (req, res) => {
   try {
-    const { meetingId } = req.params;
-    const userId = req.user.userId;
-    const { response } = req.body; // 'accepted' or 'declined'
-    
-    if (response !== "accepted" && response !== "declined") {
-      return res.status(400).json({ 
-        message: "Response must be either 'accepted' or 'declined'" 
+    const { response } = req.body;
+
+    if (!["accepted", "declined", "tentative"].includes(response)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid response status. Must be 'accepted', 'declined', or 'tentative'"
       });
     }
-    
-    // Find the meeting
-    const meeting = await Meeting.findOne({ _id: meetingId });
-    
+
+    const meeting = await Meeting.findOne({ meetingId: req.params.meetingId });
+
     if (!meeting) {
-      return res.status(404).json({ message: "Meeting not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Meeting not found"
+      });
     }
-    
+
     // Find the participant
     const participantIndex = meeting.participants.findIndex(
-      p => p.user && p.user.toString() === userId
+      p => p.userId && p.userId.toString() === req.user.id
     );
-    
+
     if (participantIndex === -1) {
-      return res.status(404).json({ message: "You are not invited to this meeting" });
+      return res.status(404).json({
+        success: false,
+        message: "You are not a participant in this meeting"
+      });
     }
-    
+
     // Update participant status
-    meeting.participants[participantIndex].status = response === "accepted" ? "accepted" : "declined";
-    
-    // Save changes
+    meeting.participants[participantIndex].status = response;
+    meeting.participants[participantIndex].responseTime = new Date();
+
     await meeting.save();
-    
-    res.json({
-      message: `Meeting invitation ${response} successfully`,
-      meeting
+
+    res.status(200).json({
+      success: true,
+      message: `Invitation ${response} successfully`,
+      status: response
     });
   } catch (error) {
     console.error("Error responding to invitation:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error while responding to invitation",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 
 // Join a meeting with access code
 const joinMeeting = async (req, res) => {
   try {
+    const { password } = req.body;
     const { meetingId } = req.params;
-    const { accessCode, email } = req.body;
-    
-    // Find the meeting
-    const meeting = await Meeting.findOne({ _id: meetingId })
-      .populate("host", "name email avatar");
-    
+
+    const meeting = await Meeting.findOne({ meetingId });
+
     if (!meeting) {
-      return res.status(404).json({ message: "Meeting not found" });
-    }
-    
-    // Check if meeting is active
-    if (meeting.status !== "active") {
-      return res.status(400).json({ 
-        message: `Cannot join a meeting that is not active. Current status: ${meeting.status}` 
+      return res.status(404).json({
+        success: false,
+        message: "Meeting not found"
       });
     }
-    
-    // Determine if user is joining as host or participant
-    let isHost = false;
-    let participantIndex = -1;
-    
-    // Handle authenticated users
-    if (req.user) {
-      const userId = req.user.userId;
-      
-      // Check if user is a host
-      if (req.user.hostId) {
-        const host = await Host.findOne({ hostID: req.user.hostId });
-        if (host && host._id.toString() === meeting.host._id.toString()) {
-          isHost = true;
-        }
-      }
-      
-      // If not host, check if user is a participant
-      if (!isHost) {
-        participantIndex = meeting.participants.findIndex(
-          p => p.user && p.user.toString() === userId
-        );
-      }
+
+    if (meeting.status !== "active") {
+      return res.status(400).json({
+        success: false,
+        message: `Meeting is ${meeting.status}, not active`
+      });
     }
+
+    // Check if user is the host
+    const isHost = meeting.host.toString() === req.user.id;
     
-    // If not found as authenticated user, check by email and access code
-    if (!isHost && participantIndex === -1 && email && accessCode) {
-      participantIndex = meeting.participants.findIndex(
-        p => p.email.toLowerCase() === email.toLowerCase() && p.accessCode === accessCode
-      );
-    }
-    
-    // Handle case where participant not found or declined
+    // Check if user is a participant
+    const participantIndex = isHost 
+      ? -1 
+      : meeting.participants.findIndex(p => p.userId && p.userId.toString() === req.user.id);
+
+    // If not host and not a participant, check if they have the correct password
     if (!isHost && participantIndex === -1) {
-      return res.status(403).json({ message: "Invalid access code or email" });
-    } else if (!isHost && meeting.participants[participantIndex].status === "declined") {
-      return res.status(403).json({ message: "You have declined this meeting invitation" });
-    }
-    
-    // Update participant status and join time
-    if (!isHost && participantIndex !== -1) {
-      meeting.participants[participantIndex].status = "attended";
+      // Password required for non-participants
+      if (!password || password !== meeting.password) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid meeting password"
+        });
+      }
+      
+      // Add them as a participant if password is correct
+      meeting.participants.push({
+        userId: req.user.id,
+        name: req.user.name,
+        email: req.user.email,
+        status: "accepted",
+        joinedAt: new Date()
+      });
+    } else if (!isHost) {
+      // Mark existing participant as joined
       meeting.participants[participantIndex].joinedAt = new Date();
-      await meeting.save();
     }
-    
-    res.json({
+
+    // If host, mark meeting as having host joined
+    if (isHost) {
+      meeting.hostJoined = true;
+      meeting.hostJoinedAt = new Date();
+    }
+
+    await meeting.save();
+
+    res.status(200).json({
+      success: true,
       message: "Joined meeting successfully",
-      meeting,
-      isHost,
-      participant: !isHost ? meeting.participants[participantIndex] : null
+      meeting: {
+        meetingId: meeting.meetingId,
+        title: meeting.title,
+        isHost
+      }
     });
   } catch (error) {
     console.error("Error joining meeting:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error while joining meeting",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 
@@ -744,45 +707,58 @@ const joinMeeting = async (req, res) => {
 const leaveMeeting = async (req, res) => {
   try {
     const { meetingId } = req.params;
-    const { email, accessCode } = req.body;
-    
-    // Find the meeting
-    const meeting = await Meeting.findOne({ _id: meetingId });
-    
+
+    const meeting = await Meeting.findOne({ meetingId });
+
     if (!meeting) {
-      return res.status(404).json({ message: "Meeting not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Meeting not found"
+      });
     }
-    
-    let participantIndex = -1;
-    
-    // Find participant by user ID if authenticated
-    if (req.user && req.user.userId) {
-      participantIndex = meeting.participants.findIndex(
-        p => p.user && p.user.toString() === req.user.userId
-      );
+
+    // Check if user is the host
+    const isHost = meeting.host.toString() === req.user.id;
+
+    // If host leaves, end the meeting
+    if (isHost) {
+      meeting.status = "completed";
+      meeting.actualEndTime = new Date();
+      await meeting.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "As host, you left and ended the meeting",
+        meetingEnded: true
+      });
     }
-    
-    // If not found by user ID, try with email and access code
-    if (participantIndex === -1 && email && accessCode) {
-      participantIndex = meeting.participants.findIndex(
-        p => p.email.toLowerCase() === email.toLowerCase() && p.accessCode === accessCode
-      );
-    }
-    
+
+    // For regular participants, mark them as left
+    const participantIndex = meeting.participants.findIndex(
+      p => p.userId && p.userId.toString() === req.user.id
+    );
+
     if (participantIndex === -1) {
-      return res.status(404).json({ message: "You are not a participant in this meeting" });
+      return res.status(404).json({
+        success: false,
+        message: "You are not a participant in this meeting"
+      });
     }
-    
-    // Update leave time
+
     meeting.participants[participantIndex].leftAt = new Date();
     await meeting.save();
-    
-    res.json({
+
+    res.status(200).json({
+      success: true,
       message: "Left meeting successfully"
     });
   } catch (error) {
     console.error("Error leaving meeting:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error while leaving meeting",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 };
 
@@ -812,7 +788,7 @@ const verifyAccessCode = async (req, res) => {
       return res.status(403).json({ message: "Invalid access code" });
     }
     
-    res.json({
+    res.status(200).json({
       message: "Access code verified successfully",
       participant: {
         name: participant.name,

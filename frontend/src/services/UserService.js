@@ -4,7 +4,7 @@ export class UserService {
     this.accessToken = localStorage.getItem("accessToken");
     this.refreshToken = localStorage.getItem("refreshToken");
     this.tokenExpiryTime = localStorage.getItem("tokenExpiry");
-    this.apiBaseUrl = "http://localhost:5000/api";
+    this.apiBaseUrl = "http://localhost:5001/api";
 
     // Set up a timer to refresh token before it expires
     this.setupRefreshTimer();

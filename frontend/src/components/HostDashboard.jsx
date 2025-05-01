@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Routes, Route, Link } from "react-router-dom";
+import { useNavigate, Routes, Route, Link, useLocation } from "react-router-dom";
 import { SessionManager } from "../utils/SessionManager";
 import "../CSS/HostDashboard.css";
 
@@ -11,7 +11,8 @@ import {
   FaNetworkWired, 
   FaHistory, 
   FaCalendarAlt, 
-  FaQrcode, 
+  FaCalendarCheck,
+  FaCalendarWeek,
   FaSignOutAlt,
   FaChevronLeft,
   FaChevronRight
@@ -19,15 +20,14 @@ import {
 
 // Import your existing pages
 import Overview from "./hosts/HostOverview";
-import HostProfile from "./hosts/HostProfile"; // Updated import path
-//import NewVisitor from "./pages/NewVisitor";
+import HostProfile from "./hosts/HostProfile";
+import NewVisitor from "./hosts/NewVisitor"; // Make sure this points to the correct component
 import HostNetwork from "./hosts/HostNetwork";
-//import VisitationHistory from "./pages/VisitationHistory";
-//import CreateMeeting from "./pages/CreateMeeting";
-//import QRCodeScanner from "./pages/QRCodeScanner";
+import CreateMeeting from "./meeting/CreateMeetingPage";
 
 const HostDashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   
   // State for host information
   const [hostInfo, setHostInfo] = useState({
@@ -43,8 +43,26 @@ const HostDashboard = () => {
   // State for sidebar collapsed mode
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
+  // Determine active page based on URL path
+  const getActivePageFromPath = (path) => {
+    if (path === "/host-dashboard") return "overview";
+    if (path.includes("/profile")) return "hostProfile";
+    if (path.includes("/new-visitor")) return "newVisitor";
+    if (path.includes("/network")) return "hostNetwork";
+    if (path.includes("/history")) return "visitationHistory";
+    if (path.includes("/meeting") && !path.includes("/meeting-history")) return "createMeeting";
+    if (path.includes("/available-meetings")) return "availableMeetings";
+    if (path.includes("/meeting-history")) return "meetingHistory";
+    return "overview";
+  };
+  
   // State for current active page
-  const [activePage, setActivePage] = useState("overview");
+  const [activePage, setActivePage] = useState(getActivePageFromPath(location.pathname));
+
+  // Update active page when location changes
+  useEffect(() => {
+    setActivePage(getActivePageFromPath(location.pathname));
+  }, [location.pathname]);
 
   // Load host information when component mounts
   useEffect(() => {
@@ -179,7 +197,8 @@ const HostDashboard = () => {
     { id: "hostNetwork", label: "Host Network", icon: <FaNetworkWired />, path: "/host-dashboard/network" },
     { id: "visitationHistory", label: "Visitation History", icon: <FaHistory />, path: "/host-dashboard/history" },
     { id: "createMeeting", label: "Create Meeting", icon: <FaCalendarAlt />, path: "/host-dashboard/meeting" },
-    { id: "qrScanner", label: "QR Code Scanner", icon: <FaQrcode />, path: "/host-dashboard/scanner" }
+    { id: "availableMeetings", label: "Scheduled Sessions", icon: <FaCalendarWeek />, path: "/host-dashboard/available-meetings" },
+    { id: "meetingHistory", label: "Meeting History", icon: <FaCalendarCheck />, path: "/host-dashboard/meeting-history" }
   ];
 
   return (
@@ -271,11 +290,19 @@ const HostDashboard = () => {
           <Routes>
             <Route index element={<Overview hostInfo={hostInfo} />} />
             <Route path="profile" element={<HostProfile />} />
-            <Route path="new-visitor" element={<div>New Visitor Page (Coming Soon)</div>} />
-            <Route path="/network" element={<HostNetwork />} />
+            <Route path="new-visitor" element={<NewVisitor />} />
+            <Route path="network" element={<HostNetwork />} />
             <Route path="history" element={<div>Visitation History Page (Coming Soon)</div>} />
-            <Route path="meeting" element={<div>Create Meeting Page (Coming Soon)</div>} />
-            <Route path="scanner" element={<div>QR Code Scanner Page (Coming Soon)</div>} />
+            <Route path="meeting" element={<CreateMeeting />} />
+            <Route path="available-meetings" element={<div>Scheduled Sessions Page (Coming Soon)</div>} />
+            <Route path="meeting-history" element={<div>Meeting History Page (Coming Soon)</div>} />
+            {/* Add a route for appointment details */}
+            <Route path="appointment/:appointmentId" element={
+              <React.Suspense fallback={<div>Loading...</div>}>
+                {/* Dynamically import the detailed appointment view */}
+                {React.createElement(React.lazy(() => import('./appointment/AppointmentDetails')))}
+              </React.Suspense>
+            } />
           </Routes>
         </div>
       </main>

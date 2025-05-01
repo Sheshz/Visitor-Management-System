@@ -251,6 +251,40 @@ export class SessionManager {
     return null;
   }
   
+  // Get current user information
+  static getCurrentUser() {
+    try {
+      // Try to get user data from localStorage first
+      if (typeof window !== 'undefined') {
+        const userDataString = localStorage.getItem('userData');
+        if (userDataString) {
+          return JSON.parse(userDataString);
+        }
+        
+        // Check if we can get user ID from session
+        const userRole = this.getUserRole();
+        if (userRole === 'user' || userRole === 'host') {
+          // Create a minimal user object based on session data
+          const userId = sessionStorage.getItem('userId');
+          const userEmail = sessionStorage.getItem('userEmail');
+          const userName = sessionStorage.getItem('userName');
+          
+          if (userId || userEmail || userName) {
+            return {
+              id: userId || '',
+              email: userEmail || '',
+              name: userName || ''
+            };
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error retrieving user data:', error);
+    }
+    
+    return null; // Return null if no user data found or error occurs
+  }
+  
   // Log out user - clear user-specific tokens
   static logoutUser() {
     this.removeItem("userToken");
@@ -288,6 +322,13 @@ export class SessionManager {
       localStorage.removeItem("userToken");
       localStorage.removeItem("hostToken");
       localStorage.removeItem("refreshToken");
+      localStorage.removeItem("userData"); // Also clear userData
     }
   }
 }
+
+// Add a named export for the getCurrentUser function for backward compatibility
+export const getCurrentUser = SessionManager.getCurrentUser.bind(SessionManager);
+
+// Default export for backward compatibility
+export default SessionManager;

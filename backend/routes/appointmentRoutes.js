@@ -1,17 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const { getAppointments, createAppointment, updateAppointment, deleteAppointment } = require('../controllers/appointmentController'); // Ensure the path is correct
+const appointmentController = require('../controllers/appointmentController');
+const { verifyUserToken, isHost } = require('../middleware/userMeetingMiddleware');
+const { appointmentExists, isAppointmentOwner } = require('../middleware/appointmentMiddleware');
 
-// Route to get all appointments
-router.get('/', getAppointments);
+// Create appointment (for users)
+router.post('/', verifyUserToken, appointmentController.createAppointment);
 
-// Route to create a new appointment
-router.post('/', createAppointment);
+// User routes
+router.get('/user', verifyUserToken, appointmentController.getUserAppointments);
 
-// Route to update an appointment
-router.put('/:id', updateAppointment);
+// Host routes
+router.get('/host', verifyUserToken, isHost, appointmentController.getHostAppointments);
+router.put('/:id/status', verifyUserToken, isHost, appointmentController.updateAppointmentStatus);
+router.get('/host/stats', verifyUserToken, isHost, appointmentController.getHostDashboardStats);
 
-// Route to delete an appointment
-router.delete('/:id', deleteAppointment);
+// Common routes
+router.get('/:id', verifyUserToken, appointmentController.getAppointmentById);
+router.delete('/:id', verifyUserToken, appointmentExists, isAppointmentOwner, appointmentController.deleteAppointment);
 
 module.exports = router;
