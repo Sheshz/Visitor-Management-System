@@ -2,57 +2,48 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Host = require("../models/Host");
 
-// Authenticate user tokens
+// Unified middleware to authenticate both users and hosts
 const authenticateUser = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({ message: "Authorization token required" });
     }
-    
+
     const token = authHeader.split(" ")[1];
-    
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     if (decodedToken.type === "user") {
-      // User authentication
       const user = await User.findById(decodedToken.userId);
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
-      }
-      
+      if (!user) return res.status(401).json({ message: "User not found" });
+
       req.user = {
-        userId: decodedToken.userId,
+        userId: user._id,
         email: user.email,
         role: "user"
       };
-      
-      // Check if user is also a host
-      const host = await Host.findOne({ user: decodedToken.userId });
+
+      const host = await Host.findOne({ user: user._id });
       if (host) {
         req.user.hostId = host.hostID;
       }
+
     } else if (decodedToken.type === "host") {
-      // Host authentication
       const host = await Host.findOne({ hostID: decodedToken.hostId });
-      if (!host) {
-        return res.status(401).json({ message: "Host not found" });
-      }
-      
+      if (!host) return res.status(401).json({ message: "Host not found" });
+
       req.user = {
-        hostId: decodedToken.hostId,
+        hostId: host.hostID,
         email: host.email,
-        role: "host"
+        role: "host",
+        userId: host.user || undefined
       };
-      
-      // Set userId if available
-      if (host.user) {
-        req.user.userId = host.user;
-      }
+
     } else {
       return res.status(401).json({ message: "Invalid token type" });
     }
-    
+
     next();
   } catch (error) {
     console.error("Authentication error:", error);
@@ -60,7 +51,6 @@ const authenticateUser = async (req, res, next) => {
   }
 };
 
-// Check if user has host privileges
 const authorizeHost = (req, res, next) => {
   if (!req.user || !req.user.hostId) {
     return res.status(403).json({ message: "Host privileges required" });
@@ -68,7 +58,25 @@ const authorizeHost = (req, res, next) => {
   next();
 };
 
+const admin = (req, res, next) => {
+  if (req.user && req.user.isAdmin) {
+    next();
+  } else {
+    res.status(403).json({ message: "Admin access required" });
+  }
+};
+
+const host = (req, res, next) => {
+  if (req.user && req.user.role === "host") {
+    next();
+  } else {
+    res.status(403).json({ message: "Host access required" });
+  }
+};
+
 module.exports = {
   authenticateUser,
-  authorizeHost
+  authorizeHost,
+  admin,
+  host
 };
